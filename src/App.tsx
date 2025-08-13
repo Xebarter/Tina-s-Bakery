@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { Header } from './components/Header';
 import { HomePage } from './components/HomePage';
@@ -15,6 +16,17 @@ import { PaymentCallbackPage } from './components/PaymentCallbackPage';
 import { OrderTracking } from './components/OrderTracking';
 import { ChatSystem } from './components/ChatSystem';
 import { MessageCircle, Phone, Mail, MapPin } from 'lucide-react';
+// SEO component is imported for potential future use
+
+// Default SEO configuration for the app
+const defaultSEO = {
+  title: "Tina's Bakery | Artisanal Baked Goods in Uganda & UAE",
+  description: "Handcrafted artisanal baked goods made with love in Uganda & UAE. Fresh bread, pastries, cakes, and custom orders for all occasions.",
+  image: "/images/og-image.jpg",
+  siteName: "Tina's Bakery",
+  twitterHandle: "@tinasbakery",
+  canonicalUrl: "https://tinasbakery.com"
+};
 
 function AppContent() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -42,19 +54,65 @@ function AppContent() {
     // Other views are handled by the router
   }, [location]);
 
-  // Get the current view from the URL
-  const getCurrentView = () => {
-    const path = location.pathname.substring(1);
-    if (path === '' || path === 'home') return 'home';
-    return path;
+  // Get the current route for dynamic SEO
+  const currentRoute = location.pathname.substring(1) || 'home';
+  const pageTitles: Record<string, string> = {
+    'home': 'Artisanal Baked Goods & Custom Cakes',
+    'menu': 'Our Menu - Freshly Baked Goods',
+    'custom-cakes': 'Custom Cakes - Design Your Perfect Cake',
+    'about': 'Our Story - Tina\'s Bakery',
+    'contact': 'Contact Us - Get in Touch',
+    'cart': 'Your Shopping Cart',
+    'account': 'My Account',
+    'order-tracking': 'Track Your Order',
+    'admin': 'Admin Dashboard'
   };
 
+  const pageDescriptions: Record<string, string> = {
+    'home': 'Discover handcrafted artisanal bread, pastries, and custom cakes made with love in Uganda & UAE.',
+    'menu': 'Explore our delicious selection of freshly baked goods, bread, pastries, and desserts.',
+    'custom-cakes': 'Design your dream cake with our custom cake service. Perfect for birthdays, weddings, and special occasions.',
+    'about': 'Learn about our passion for baking and commitment to quality at Tina\'s Bakery.',
+    'contact': 'Have questions? Contact our friendly team. We\'d love to hear from you!',
+    'cart': 'Review your order and proceed to checkout with our secure payment system.',
+    'account': 'Manage your account details, orders, and preferences.',
+    'order-tracking': 'Track the status of your order in real-time.',
+    'admin': 'Admin dashboard for managing Tina\'s Bakery content and orders.'
+  };
+
+  // Generate dynamic page title and description
+  const pageTitle = pageTitles[currentRoute] || defaultSEO.title;
+  const pageDescription = pageDescriptions[currentRoute] || defaultSEO.description;
+  const fullTitle = `${pageTitle} | ${defaultSEO.siteName}`;
+  const canonicalUrl = `${defaultSEO.canonicalUrl}${location.pathname}`;
+  const isHomePage = currentRoute === 'home';
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {!location.pathname.startsWith('/admin') && (
-        <Header activeView={getCurrentView()} onViewChange={handleViewChange} />
-      )}
-      <main>
+    <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <html lang="en" />
+        <title>{fullTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content={isHomePage ? 'website' : 'article'} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:title" content={fullTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={defaultSEO.image} />
+        <meta property="og:site_name" content={defaultSEO.siteName} />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content={defaultSEO.twitterHandle} />
+        <meta name="twitter:title" content={fullTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={defaultSEO.image} />
+      </Helmet>
+      
+      <Header activeView={currentRoute} onViewChange={handleViewChange} />
+      <main className="flex-grow">
         <Routes>
           <Route path="/" element={<HomePage onViewChange={handleViewChange} />} />
           <Route path="/home" element={<HomePage onViewChange={handleViewChange} />} />
@@ -224,9 +282,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <HelmetProvider>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </HelmetProvider>
   );
 }
 

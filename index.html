@@ -1,10 +1,107 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
+    <!-- Basic Meta Tags -->
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tina&#39;s Bakery Comprehensive Web Application</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="theme-color" content="#b45309" />
+    <meta name="description" content="Tina's Bakery - Handcrafted artisanal baked goods made with love in Uganda & UAE. Fresh bread, pastries, cakes, and custom orders for all occasions." />
+    <meta name="keywords" content="bakery, fresh bread, pastries, cakes, Uganda bakery, UAE bakery, custom cakes, artisanal bakery, Tina's Bakery" />
+    <meta name="author" content="Tina's Bakery" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tinasbakery.com/" />
+    <meta property="og:title" content="Tina's Bakery | Artisanal Baked Goods in Uganda & UAE" />
+    <meta property="og:description" content="Discover handcrafted artisanal baked goods made with love. Fresh bread, pastries, and custom cakes in Uganda & UAE." />
+    <meta property="og:image" content="https://tinasbakery.com/images/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Tina's Bakery" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://tinasbakery.com/" />
+    <meta name="twitter:title" content="Tina's Bakery | Artisanal Baked Goods in Uganda & UAE" />
+    <meta name="twitter:description" content="Discover handcrafted artisanal baked goods made with love. Fresh bread, pastries, and custom cakes in Uganda & UAE." />
+    <meta name="twitter:image" content="https://tinasbakery.com/images/twitter-card.jpg" />
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="msapplication-TileColor" content="#b45309" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://tinasbakery.com/" />
+    
+    <!-- Preconnect to important domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    
+    <!-- Page Title -->
+    <title>Tina's Bakery | Artisanal Baked Goods in Uganda & UAE</title>
+    
+    <!-- Structured Data / Schema.org -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Bakery",
+      "name": "Tina's Bakery",
+      "image": "https://tinasbakery.com/images/logo.jpg",
+      "description": "Handcrafted artisanal baked goods made with love in Uganda & UAE. Fresh bread, pastries, cakes, and custom orders for all occasions.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Kampala",
+        "addressRegion": "Kampala",
+        "addressCountry": "UG"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "0.3136° N",
+        "longitude": "32.5811° E"
+      },
+      "telephone": "+256771756461",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+          ],
+          "opens": "08:00",
+          "closes": "20:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "Saturday",
+          "opens": "09:00",
+          "closes": "18:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "Sunday",
+          "opens": "10:00",
+          "closes": "16:00"
+        }
+      ],
+      "priceRange": "$$",
+      "servesCuisine": ["Bakery", "Desserts", "Cakes"],
+      "sameAs": [
+        "https://www.facebook.com/tinasbakery",
+        "https://www.instagram.com/tinasbakery",
+        "https://twitter.com/tinasbakery"
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

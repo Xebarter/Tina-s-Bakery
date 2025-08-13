@@ -5,6 +5,7 @@ import { formatUGX } from '../utils/currency';
 import { HeroCarouselManager } from './HeroCarouselManager';
 import { SeasonalSpecialsCarousel } from './SeasonalSpecialsCarousel';
 import { ProductDetailModal } from './ProductDetailModal';
+import { SEO } from './SEO';
 
 interface HomePageProps {
   onViewChange: (view: string) => void;
@@ -40,7 +41,12 @@ export function HomePage({ onViewChange }: HomePageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950 text-slate-900">
+    <>
+      <SEO 
+        title="Artisanal Baked Goods & Custom Cakes in Uganda & UAE"
+        description="Discover Tina's Bakery - Handcrafted artisanal bread, pastries, and custom cakes made with love in Uganda & UAE. Fresh, delicious, and perfect for any occasion."
+      />
+      <main className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
       {/* ============= LUXE FULL-VIEWPORT HERO ============= */}
       <header
         className="relative h-screen min-h-[100svh] min-h-[100dvh] overflow-hidden"
@@ -133,8 +139,8 @@ export function HomePage({ onViewChange }: HomePageProps) {
             >
               Signature Collection
             </h2>
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Handcrafted with love using traditional recipes—each piece tells a story of excellence and passion.
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Handcrafted with love, our signature items are customer favorites. Each creation is made with the finest ingredients and baked to perfection.
             </p>
           </div>
 
@@ -172,10 +178,10 @@ export function HomePage({ onViewChange }: HomePageProps) {
                   </div>
 
                   {/* Content */}
-                  <div className="relative p-6">
-                    <h3 className="mb-2 text-lg font-bold text-slate-800 transition-colors duration-300 group-hover:text-amber-700">
-                      {product.name}
-                    </h3>
+                  <div className="container mx-auto px-4 py-12">
+                    <header className="text-center mb-12">
+                      <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
+                    </header>
                     <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-slate-600">
                       {product.description}
                     </p>
@@ -329,6 +335,7 @@ export function HomePage({ onViewChange }: HomePageProps) {
         onClose={handleCloseModal}
         productId={selectedProductId || ''}
       />
-    </div>
+      </main>
+    </>
   );
 }
