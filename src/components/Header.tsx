@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Menu, X, ShoppingCart, User, Phone } from 'lucide-react';
 import { AppContext } from '../contexts/AppContext';
 import { CartItem } from '../types';
@@ -13,6 +13,37 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
   const context = useContext(AppContext);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && 
+          menuRef.current && 
+          !menuRef.current.contains(event.target as Node) &&
+          menuButtonRef.current &&
+          !menuButtonRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    // Add event listener when menu is open
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      // Prevent body scroll when menu is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable body scroll when menu is closed
+      document.body.style.overflow = 'auto';
+    }
+
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'auto';
+    };
+  }, [isMenuOpen]);
 
   if (!context) {
     throw new Error('Header must be used within an AppProvider');
@@ -129,37 +160,110 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
 
             {/* Mobile menu button */}
             <button
+              ref={menuButtonRef}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-gray-700 hover:text-amber-700 transition-all duration-300"
+              className="md:hidden p-2 text-gray-700 hover:text-amber-700 transition-all duration-300 z-50"
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? (
+                <X className="h-6 w-6 transition-transform duration-300 transform rotate-180" />
+              ) : (
+                <Menu className="h-6 w-6 transition-transform duration-300" />
+              )}
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-amber-200 bg-[#fffdf9] shadow-inner">
-            <nav className="flex flex-col space-y-3">
-              {navigation.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    onViewChange(item.id);
-                    setIsMenuOpen(false);
+        {/* Mobile Navigation Overlay */}
+        <div 
+          ref={menuRef}
+          className={`fixed inset-0 z-40 transform transition-transform duration-300 ease-in-out ${
+            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          } md:hidden`}
+        >
+          {/* Overlay Background */}
+          <div 
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          
+          {/* Menu Panel */}
+          <div className="relative h-full w-4/5 max-w-sm bg-gradient-to-b from-amber-50 to-white shadow-2xl overflow-y-auto">
+            <div className="p-6">
+              {/* Logo in Menu */}
+              <div className="mb-8">
+                <img
+                  src="/logo.svg"
+                  alt="Tina's Bakery Logo"
+                  className="h-12 w-auto object-contain"
+                  style={{
+                    filter:
+                      'brightness(0) saturate(100%) invert(40%) sepia(76%) saturate(485%) hue-rotate(356deg) brightness(95%) contrast(92%)',
                   }}
-                  className={`text-left py-2 px-3 rounded-md font-medium tracking-wide transition-all duration-300 ${
-                    activeView === item.id
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'text-gray-700 hover:bg-amber-50 hover:text-amber-700'
-                  }`}
+                />
+              </div>
+              
+              {/* Navigation Links */}
+              <nav className="flex flex-col space-y-2">
+                {navigation.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      onViewChange(item.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full text-left py-4 px-4 rounded-lg font-medium text-lg tracking-wide transition-all duration-300 flex items-center ${
+                      activeView === item.id
+                        ? 'bg-amber-100 text-amber-700 font-semibold shadow-inner'
+                        : 'text-gray-700 hover:bg-amber-50 hover:text-amber-700'
+                    }`}
+                  >
+                    {item.name}
+                    {activeView === item.id && (
+                      <span className="ml-auto text-amber-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+              
+              {/* Contact Info */}
+              <div className="mt-8 pt-6 border-t border-amber-100">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                  Contact Us
+                </h3>
+                <a
+                  href="tel:+256771756461"
+                  className="flex items-center text-gray-700 hover:text-amber-700 transition-colors mb-2"
                 >
-                  {item.name}
-                </button>
-              ))}
-            </nav>
+                  <Phone className="h-5 w-5 mr-2 text-amber-600" />
+                  <span>+256 771 756 461</span>
+                </a>
+                {currentCustomer && (
+                  <div className="mt-4 pt-4 border-t border-amber-100">
+                    <div className="flex items-center">
+                      <div className="bg-amber-100 rounded-full p-2 mr-3">
+                        <User className="h-5 w-5 text-amber-700" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">{currentCustomer.fullName}</p>
+                        <button 
+                          onClick={() => onViewChange('account')}
+                          className="text-xs text-amber-600 hover:underline mt-1"
+                        >
+                          View Account
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Admin Mode Indicator */}
