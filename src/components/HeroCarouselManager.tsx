@@ -88,19 +88,7 @@ export function HeroCarouselManager({ isAdmin = false, onViewChange }: HeroCarou
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/60 via-black/30 to-transparent z-10" />
-            <div className="relative z-20 flex flex-col justify-center h-full px-6 py-12 md:px-12 text-white text-center w-full">
-              <h1 className="text-4xl md:text-5xl font-bold mb-2 drop-shadow-lg">Welcome to Tina’s Bakery</h1>
-              <p className="text-lg md:text-2xl font-medium mb-2 drop-shadow">Always Fresh</p>
-              <p className="text-base md:text-lg mb-6 max-w-xl mx-auto drop-shadow">
-                Freshly baked with love! From classic loaves to seasonal treats, Tina’s Bakery serves up deliciousness made with the finest ingredients—always fresh, always delightful
-              </p>
-                <button
-                className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-colors text-lg mx-auto"
-                onClick={() => navigate('/menu')}
-              >
-                Order Now
-                </button>
-            </div>
+            
           </div>
         </div>
       </section>
@@ -122,21 +110,7 @@ export function HeroCarouselManager({ isAdmin = false, onViewChange }: HeroCarou
           />
           <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/60 via-black/30 to-transparent z-10" />
           {/* Overlay text and button */}
-          <div className="relative z-20 flex flex-col justify-center h-full px-6 py-12 md:px-12 text-white text-center w-full">
-            <h1 className="text-4xl md:text-5xl font-bold mb-2 drop-shadow-lg">
-              Welcome to <span className="text-amber-600">Tina’s Bakery</span>
-                </h1>
-            <p className="text-lg md:text-2xl font-medium mb-2 drop-shadow italic">Always Fresh</p>
-            <p className="text-base md:text-lg mb-6 max-w-xl mx-auto drop-shadow">
-              Freshly baked with love! From classic loaves to seasonal treats, Tina’s Bakery serves up deliciousness made with the finest ingredients—always fresh, always delightful
-            </p>
-            <button
-              className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-colors text-lg mx-auto"
-              onClick={() => onViewChange ? onViewChange('menu') : undefined}
-            >
-              Order Now
-            </button>
-          </div>
+          
         </div>
     </div>
     </section>

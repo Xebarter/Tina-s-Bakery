@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Plus, Trash2, Edit, Save, X, Upload } from 'lucide-react';
-import { uploadProductImage } from '../services/supabase';
+import { uploadProductImage, supabase } from '../services/supabase';
 
 export interface TeamMember {
   id?: string;

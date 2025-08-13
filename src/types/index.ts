@@ -78,9 +78,17 @@ export interface SalesReport {
   customerCount: number;
 }
 
-export interface AboutContent {
+export interface AboutSection {
   id: string;
   title: string;
   content: string;
   images: string[];
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AboutContent {
+  sections: AboutSection[];
 }

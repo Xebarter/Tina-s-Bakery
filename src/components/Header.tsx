@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
-import { Menu, X, ShoppingCart, User, Settings, Phone } from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { Menu, X, ShoppingCart, User, Phone } from 'lucide-react';
 import { AppContext } from '../contexts/AppContext';
-import { useContext } from 'react';
 import { CartItem } from '../types';
-import { Customer } from '../services/customerAuthService';
-import { customerAuthService } from '../services/customerAuthService';
+import { Customer, customerAuthService } from '../services/customerAuthService';
 
 interface HeaderProps {
   activeView: string;
@@ -13,17 +11,20 @@ interface HeaderProps {
 
 export function Header({ activeView, onViewChange }: HeaderProps) {
   const context = useContext(AppContext);
-  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
-  
+
   if (!context) {
     throw new Error('Header must be used within an AppProvider');
   }
-  
-  const { state, dispatch } = context;
-  const cartItemCount = state.cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
 
-  React.useEffect(() => {
+  const { state } = context;
+  const cartItemCount = state.cart.reduce(
+    (sum: number, item: CartItem) => sum + item.quantity,
+    0
+  );
+
+  useEffect(() => {
     const loadCustomer = async () => {
       try {
         const customer = await customerAuthService.getCurrentCustomer();
@@ -47,10 +48,9 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
   ];
 
   return (
-    <header className="bg-white shadow-lg sticky top-0 z-50">
+    <header className="bg-gradient-to-r from-white via-[#faf6f0] to-white shadow-xl sticky top-0 z-50 border-b border-amber-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex items-center">
             <button
@@ -60,22 +60,25 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
               <img
                 src="/logo.svg"
                 alt="Tina's Bakery Logo"
-                className="h-10 w-auto object-contain"
-                style={{ filter: 'brightness(0) saturate(100%) invert(51%) sepia(85%) saturate(573%) hue-rotate(360deg) brightness(94%) contrast(94%)' }}
+                className="h-12 w-auto object-contain drop-shadow-sm"
+                style={{
+                  filter:
+                    'brightness(0) saturate(100%) invert(40%) sepia(76%) saturate(485%) hue-rotate(356deg) brightness(95%) contrast(92%)',
+                }}
               />
             </button>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-10">
             {navigation.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onViewChange(item.id)}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-semibold tracking-wide transition-all duration-300 pb-1 border-b-2 ${
                   activeView === item.id
-                    ? 'text-amber-600 border-b-2 border-amber-600'
-                    : 'text-gray-700 hover:text-amber-600'
+                    ? 'text-amber-700 border-amber-700'
+                    : 'text-gray-700 border-transparent hover:text-amber-700 hover:border-amber-400'
                 }`}
               >
                 {item.name}
@@ -84,24 +87,24 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
           </nav>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-5">
             {/* Phone */}
             <a
-              href="tel:555-123-4567"
-              className="hidden sm:flex items-center text-gray-600 hover:text-amber-600 transition-colors"
+              href="tel:+256771756461"
+              className="hidden sm:flex items-center text-gray-700 hover:text-amber-700 transition-all duration-300"
             >
-              <Phone className="h-4 w-4 mr-1" />
-              <span className="text-sm">(555) 123-4567</span>
+              <Phone className="h-5 w-5 mr-1" />
+              <span className="text-sm font-medium">+256 771 756 461</span>
             </a>
 
             {/* Cart */}
             <button
               onClick={() => onViewChange('cart')}
-              className="relative p-2 text-gray-600 hover:text-amber-600 transition-colors"
+              className="relative p-2 text-gray-700 hover:text-amber-700 transition-all duration-300"
             >
               <ShoppingCart className="h-6 w-6" />
               {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-amber-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-amber-700 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-sm">
                   {cartItemCount}
                 </span>
               )}
@@ -110,36 +113,24 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
             {/* User Account */}
             <button
               onClick={() => onViewChange('account')}
-              className={`p-2 transition-colors ${
+              className={`p-2 transition-all duration-300 ${
                 currentCustomer
-                  ? 'text-amber-600 hover:text-amber-700'
-                  : 'text-gray-600 hover:text-amber-600'
+                  ? 'text-amber-700 hover:text-amber-800'
+                  : 'text-gray-700 hover:text-amber-700'
               }`}
             >
               <User className="h-6 w-6" />
             </button>
             {currentCustomer && (
-              <div className="hidden sm:block text-xs text-gray-600">
-                {currentCustomer ? currentCustomer.fullName : 'My Account'}
+              <div className="hidden sm:block text-xs font-medium text-gray-700">
+                {currentCustomer.fullName}
               </div>
             )}
-
-            {/* Admin Mode Toggle */}
-            <button
-              onClick={() => dispatch({ type: 'TOGGLE_ADMIN_MODE' })}
-              className={`p-2 transition-colors ${
-                state.isAdminMode
-                  ? 'text-red-600 hover:text-red-800'
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <Settings className="h-6 w-6" />
-            </button>
 
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-gray-600 hover:text-amber-600 transition-colors"
+              className="md:hidden p-2 text-gray-700 hover:text-amber-700 transition-all duration-300"
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -148,7 +139,7 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200">
+          <div className="md:hidden py-4 border-t border-amber-200 bg-[#fffdf9] shadow-inner">
             <nav className="flex flex-col space-y-3">
               {navigation.map((item) => (
                 <button
@@ -157,10 +148,10 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
                     onViewChange(item.id);
                     setIsMenuOpen(false);
                   }}
-                  className={`text-left py-2 px-3 rounded-md transition-colors ${
+                  className={`text-left py-2 px-3 rounded-md font-medium tracking-wide transition-all duration-300 ${
                     activeView === item.id
-                      ? 'bg-amber-50 text-amber-600'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'text-gray-700 hover:bg-amber-50 hover:text-amber-700'
                   }`}
                 >
                   {item.name}
@@ -173,8 +164,8 @@ export function Header({ activeView, onViewChange }: HeaderProps) {
 
       {/* Admin Mode Indicator */}
       {state.isAdminMode && (
-        <div className="bg-red-600 text-white text-center py-2">
-          <p className="text-sm font-medium">Admin Mode Active</p>
+        <div className="bg-red-600 text-white text-center py-2 shadow-md">
+          <p className="text-sm font-semibold">Admin Mode Active</p>
         </div>
       )}
     </header>

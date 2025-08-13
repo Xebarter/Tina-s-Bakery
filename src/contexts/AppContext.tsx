@@ -165,9 +165,26 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, isAdminMode: !state.isAdminMode };
 
     case 'UPDATE_PRODUCT':
+      return {
+        ...state,
+        products: state.products.map(product =>
+          product.id === action.payload.id 
+            ? { ...product, ...action.payload, updatedAt: new Date().toISOString() }
+            : product
+        )
+      };
+      
     case 'ADD_PRODUCT':
-    case 'DELETE_PRODUCT':
-      return state; // Supabase handles this asynchronously
+      return {
+        ...state,
+        products: [...state.products, action.payload]
+      };
+      
+    case 'REMOVE_PRODUCT':
+      return {
+        ...state,
+        products: state.products.filter(product => product.id !== action.payload)
+      };
 
     case 'ADD_ORDER':
       return { ...state, orders: [...state.orders, action.payload] };
@@ -270,7 +287,7 @@ interface AppContextType {
   removeCategory: (id: string) => Promise<void>;
   // About content
   reloadAboutContent: () => Promise<void>;
-  updateAboutContent: (id: string, updates: Partial<AboutContent>) => Promise<void>;
+  updateAboutContent: (id: string, updates: Partial<AboutContent>) => Promise<{ success: boolean; error?: string }>;
   // Team members
   reloadTeamMembers: () => Promise<void>;
   addTeamMember: (member: Omit<TeamMember, 'id'>) => Promise<TeamMember>;
@@ -411,10 +428,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const editProduct = useCallback(async (id: string, updates: Partial<Product>): Promise<void> => {
+  const editProduct = useCallback(async (id: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Product> => {
     try {
       const updatedProduct = await updateProduct(id, updates);
       dispatch({ type: 'UPDATE_PRODUCT', payload: updatedProduct });
+      return updatedProduct;
     } catch (error) {
       console.error('Failed to update product:', error);
       throw error;
@@ -491,6 +509,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       authError,
     },
     dispatch: (action: AppAction) => dispatch(action),
+    createProduct,
+    editProduct,
+    removeProduct,
     reloadProducts: async (): Promise<Product[]> => {
       try {
         const products = await fetchProducts();
@@ -808,12 +829,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error('Failed to load about content:', error);
       }
     },
-    updateAboutContent: async (id: string, updates: Partial<AboutContent>): Promise<void> => {
+    updateAboutContent: async (id: string, updates: Partial<AboutContent>): Promise<{ success: boolean; error?: string }> => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          return { 
+            success: false, 
+            error: 'You must be logged in to update the about content. Please sign in and try again.' 
+          };
+        }
+
         const updatedContent = await updateAboutContent(id, updates);
         dispatch({ type: 'SET_ABOUT_CONTENT', payload: updatedContent });
+        return { success: true };
       } catch (error) {
         console.error('Failed to update about content:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred while updating the about content.';
+        return { 
+          success: false, 
+          error: errorMessage 
+        };
       }
     },
     // Team members

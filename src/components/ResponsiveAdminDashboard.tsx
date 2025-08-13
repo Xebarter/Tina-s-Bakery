@@ -339,7 +339,7 @@ export function ResponsiveAdminDashboard() {
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Welcome back, Admin</h2>
+                  <h2 className="text-2xl font-bold mb-2">Welcome back, Tina</h2>
                   <p className="text-amber-100">Here's what's happening with your bakery today</p>
                 </div>
                 <div className="text-right">
@@ -883,11 +883,21 @@ export function ResponsiveAdminDashboard() {
                   if (editingProduct.imageFile) {
                     imagePath = await handleImageUpload(editingProduct.imageFile);
                   }
-                  await editProduct(editingProduct.id, {
-                    ...editingProduct,
+                  
+                  // Create updates object with only the necessary fields
+                  const updates = {
+                    name: editingProduct.name,
+                    description: editingProduct.description,
                     price: Number(editingProduct.price),
                     inventory: Number(editingProduct.inventory),
-                  });
+                    category: editingProduct.category,
+                    image: imagePath,
+                    isFeatured: editingProduct.isFeatured,
+                    isActive: editingProduct.isActive,
+                    // Don't include id, createdAt, updatedAt as they shouldn't be updated
+                  };
+                  
+                  await editProduct(editingProduct.id, updates);
                   setShowEditProductModal(false);
                   setEditingProduct(null);
                   setFormError('');

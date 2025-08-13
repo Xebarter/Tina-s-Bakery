@@ -260,83 +260,73 @@ export async function fetchAboutContent(): Promise<any> {
   }
 }
 
-export async function updateAboutContent(id: string, updates: any): Promise<any> {
-  console.log('Updating about content with ID:', id, 'Updates:', updates);
-  
+export interface AboutContentUpdate {
+  title: string;
+  content: string;
+  images: string[];
+  updated_at?: string;
+}
+
+export async function updateAboutContent(id: string, updates: Omit<AboutContentUpdate, 'updated_at'>): Promise<AboutContentUpdate> {
   try {
     // Get the current session
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    const session = sessionData?.session;
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    // Log session and error for debugging
-    console.log('Session check:', { session, sessionError });
-    
-    if (sessionError) {
-      const errorMsg = 'Failed to verify authentication status';
-      console.error(errorMsg, sessionError);
-      throw new Error(errorMsg);
-    }
-    
-    if (!session) {
-      const errorMsg = 'You must be logged in to update the about content. Please sign in and try again.';
-      console.error(errorMsg);
-      throw new Error(errorMsg);
+    if (sessionError || !session) {
+      console.error('Authentication required:', sessionError?.message || 'No active session');
+      throw new Error('You must be logged in to update the about content');
     }
 
-    // First, try to update the existing record
-    console.log('Attempting to update existing about content...');
-    const { data, error } = await supabase
+    // Prepare the update data
+    const updateData: AboutContentUpdate = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Check if content exists
+    const { data: existingContent, error: fetchError } = await supabase
       .from('about_content')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
+      .select('id')
       .eq('id', id)
-      .select()
-      .single();
+      .maybeSingle();
 
-    console.log('Update result:', { data, error });
-
-    // If update was successful, return the data
-    if (data) {
-      console.log('Successfully updated about content:', data);
-      return data;
-    }
-
-    // If no rows were updated, try to insert a new record
-    if (error || !data) {
-      console.log('No existing record found, attempting to insert new about content...');
-      
-      const { data: newData, error: insertError } = await supabase
+    let result;
+    
+    if (existingContent) {
+      // Update existing content
+      const { data, error: updateError } = await supabase
         .from('about_content')
-        .insert([{ 
-          id,
-          ...updates,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
+        .update(updateData)
+        .eq('id', id)
         .select()
         .single();
       
-      console.log('Insert result:', { newData, insertError });
+      if (updateError) throw updateError;
+      result = data;
+    } else {
+      // Insert new content
+      const { data, error: insertError } = await supabase
+        .from('about_content')
+        .insert([{ id, ...updateData, created_at: new Date().toISOString() }])
+        .select()
+        .single();
       
-      if (insertError) {
-        console.error('Error inserting about content:', insertError);
-        throw insertError;
-      }
-      
-      if (!newData) {
-        throw new Error('Failed to create new about content: No data returned');
-      }
-      
-      return newData;
+      if (insertError) throw insertError;
+      result = data;
     }
     
-    return data;
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error in updateAboutContent:', errorMessage);
-    throw new Error(errorMessage || 'Failed to update about content');
+    if (!result) {
+      throw new Error('Failed to save about content: No data returned');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error in updateAboutContent:', error);
+    throw new Error(
+      error instanceof Error 
+        ? error.message 
+        : 'An unexpected error occurred while updating the about content'
+    );
   }
 }
 
