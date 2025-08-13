@@ -81,7 +81,8 @@ export function HomePage({ onViewChange }: HomePageProps) {
               </div>
               <h1 className="text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
                 Welcome to
-                <span className="bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-100 bg-clip-text text-transparent"> Tina's Bakery</span>
+                <span className="bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 bg-clip-text text-transparent">Tina's Bakery</span>
+
               </h1>
               <p className="mt-4 max-w-xl text-base text-white/80 sm:text-lg">
                 
