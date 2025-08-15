@@ -11,6 +11,8 @@ import { AboutPage } from './components/AboutPage';
 import { ContactPage } from './components/ContactPage';
 import { AccountPage } from './components/AccountPage';
 import { ResponsiveAdminDashboard } from './components/ResponsiveAdminDashboard';
+import AdminLogin from './components/AdminLogin';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { PaymentPage } from './components/PaymentPage';
 import { PaymentCallbackPage } from './components/PaymentCallbackPage';
 import { OrderTracking } from './components/OrderTracking';
@@ -125,7 +127,16 @@ function AppContent() {
           <Route path="/payment" element={<PaymentPage onViewChange={handleViewChange} />} />
           <Route path="/payment-callback" element={<PaymentCallbackPage onViewChange={handleViewChange} />} />
           <Route path="/order-tracking" element={<OrderTracking currentUser={state.currentUser} />} />
-          <Route path="/admin" element={<ResponsiveAdminDashboard />} />
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route 
+            path="/admin/*" 
+            element={
+              <ProtectedRoute>
+                <ResponsiveAdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="*" element={<HomePage onViewChange={handleViewChange} />} />
         </Routes>
       </main>

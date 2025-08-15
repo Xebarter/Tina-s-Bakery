@@ -107,7 +107,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {mode === 'add-to-cart' ? (
                 <button
                   className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg font-semibold mt-2"
-                  onClick={() => dispatch({ type: 'ADD_TO_CART', payload: product })}
+                  onClick={() => dispatch({ type: 'ADD_TO_CART', payload: { id: product.id, product: product, quantity: 1, price: product.price, name: product.name, imageUrl: product.image } })}
                   disabled={!product.inStock}
                 >
                   <ShoppingCart className="inline-block mr-2 h-5 w-5" /> Add to Cart
@@ -130,4 +130,4 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       </div>
     </div>
   );
-}; 
+};

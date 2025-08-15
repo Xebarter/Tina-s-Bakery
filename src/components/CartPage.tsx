@@ -37,11 +37,18 @@ export function CartPage({ onViewChange }: CartPageProps) {
     }
   }, [state.cart]);
   
-  const subtotal = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const subtotal = state.cart.reduce((sum, item) => {
+    if (!item.product) {
+      console.error('Cart item with missing product:', item);
+      return sum;
+    }
+    return sum + (item.product.price * item.quantity);
+  }, 0);
   const tax = subtotal * 0.18; // 18% VAT in Uganda
   const total = subtotal + tax;
 
   const updateQuantity = (productId: string, quantity: number) => {
+    console.log('Updating quantity:', { productId, quantity });
     if (quantity <= 0) {
       dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
     } else {
@@ -103,7 +110,7 @@ export function CartPage({ onViewChange }: CartPageProps) {
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              {state.cart.map((item) => (
+              {state.cart.filter(item => item.product).map((item) => (
                 <div key={item.productId} className="p-6 border-b border-gray-200 last:border-b-0">
                   <div className="flex items-center space-x-4">
                     <div className="relative w-24 h-24 flex-shrink-0">
@@ -233,15 +240,23 @@ export function CartPage({ onViewChange }: CartPageProps) {
                     </div>
                     <div className="flex items-center space-x-3">
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateQuantity(item.id, item.quantity - 1);
+                        }}
                         className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                        aria-label="Decrease quantity"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
                       <span className="w-8 text-center font-medium">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateQuantity(item.id, item.quantity + 1);
+                        }}
                         className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                        aria-label="Increase quantity"
                       >
                         <Plus className="h-4 w-4" />
                       </button>
@@ -251,8 +266,12 @@ export function CartPage({ onViewChange }: CartPageProps) {
                         {formatUGX(item.product.price * item.quantity)}
                       </p>
                       <button
-                        onClick={() => removeItem(item.productId)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeItem(item.id);
+                        }}
                         className="text-red-600 hover:text-red-800 mt-2"
+                        aria-label="Remove item"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

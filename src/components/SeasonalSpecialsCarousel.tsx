@@ -147,7 +147,7 @@ export const SeasonalSpecialsCarousel: React.FC<SeasonalSpecialsCarouselProps> =
                 </div>
                 <button
                   className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg font-semibold mt-2"
-                  onClick={() => product && dispatch({ type: 'ADD_TO_CART', payload: product })}
+                  onClick={() => product && dispatch({ type: 'ADD_TO_CART', payload: { id: product.id, product: product, quantity: 1, price: product.price, name: product.name, imageUrl: product.image } })}
                   disabled={!product}
                 >
                   Add to Cart

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Menu, 
   X, 
@@ -267,10 +268,19 @@ export function ResponsiveAdminDashboard() {
     setTimeout(() => setIsLoading(false), 200);
   };
 
+  const navigate = useNavigate();
+
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to exit admin mode?')) {
-      // This should be handled by context dispatch
-      console.log('Logging out...');
+      // Clear authentication state
+      localStorage.removeItem('is_authenticated');
+      localStorage.removeItem('admin_info');
+      
+      // Trigger storage event to update other tabs
+      window.dispatchEvent(new Event('storage'));
+      
+      // Redirect to login page
+      navigate('/admin/login');
     }
   };
 

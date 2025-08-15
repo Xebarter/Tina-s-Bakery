@@ -101,6 +101,12 @@ const initialState: AppState = {
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'ADD_TO_CART':
+      // Validate the payload
+      if (!action.payload.product) {
+        console.error('ADD_TO_CART dispatched with missing product:', action.payload);
+        return state; // Do not add invalid items to the cart
+      }
+
       // Check if product is already in cart
       const existingItem = state.cart.find(item => item.id === action.payload.id);
       
@@ -111,7 +117,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
             item.id === action.payload.id
               ? { 
                   ...item, 
-                  quantity: item.quantity + 1,
+                  quantity: item.quantity + action.payload.quantity,
                   product: { ...item.product } // Ensure product reference is updated
                 }
               : item

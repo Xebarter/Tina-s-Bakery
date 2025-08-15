@@ -1,11 +1,12 @@
-import React from 'react';
-import { Clock, MapPin, Star, ArrowRight, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, MapPin, Star, ArrowRight, Sparkles, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { formatUGX } from '../utils/currency';
 import { HeroCarouselManager } from './HeroCarouselManager';
 import { SeasonalSpecialsCarousel } from './SeasonalSpecialsCarousel';
 import { ProductDetailModal } from './ProductDetailModal';
 import { SEO } from './SEO';
+import { Product } from '../types';
 
 interface HomePageProps {
   onViewChange: (view: string) => void;
@@ -13,8 +14,9 @@ interface HomePageProps {
 
 export function HomePage({ onViewChange }: HomePageProps) {
   const { state, dispatch } = useApp();
-  const [selectedProductId, setSelectedProductId] = React.useState<string | null>(null);
-  const [showProductModal, setShowProductModal] = React.useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const signatureProducts = state.products.filter(p => p.isSignatureProduct);
   const seasonalProducts = state.products.filter(p => p.isSeasonalSpecial);
@@ -38,6 +40,30 @@ export function HomePage({ onViewChange }: HomePageProps) {
   const handleCloseModal = () => {
     setShowProductModal(false);
     setSelectedProductId(null);
+  };
+
+  const getQuantity = (productId: string) => quantities[productId] || 1;
+
+  const updateQuantity = (productId: string, change: number) => {
+    const newQuantity = Math.max(1, getQuantity(productId) + change);
+    setQuantities(prev => ({ ...prev, [productId]: newQuantity }));
+  };
+
+  const addToCart = (product: Product) => {
+    const quantity = getQuantity(product.id);
+    dispatch({
+      type: 'ADD_TO_CART',
+      payload: {
+        id: product.id,
+        product: product,
+        quantity: quantity,
+        price: product.price,
+        name: product.name,
+        imageUrl: product.image
+      }
+    });
+    // Reset quantity after adding to cart
+    setQuantities(prev => ({ ...prev, [product.id]: 1 }));
   };
 
   return (
@@ -198,13 +224,31 @@ export function HomePage({ onViewChange }: HomePageProps) {
                       </div>
                     </div>
 
+                    {/* Quantity Selector */}
+                    <div className="mb-4 flex items-center justify-center space-x-3" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, -1); }}
+                        className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                        disabled={getQuantity(product.id) <= 1}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="w-8 text-center font-medium">{getQuantity(product.id)}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, 1); }}
+                        className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                        disabled={getQuantity(product.id) >= (product.inventory || 10)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Add to Cart Button */}
                     <button
-                      className="relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:from-amber-700 hover:to-amber-800 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      onClick={e => {
-                        e.stopPropagation();
-                        dispatch({ type: 'ADD_TO_CART', payload: product });
-                      }}
+                      onClick={e => { e.stopPropagation(); addToCart(product); }}
+                      className="relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:from-amber-700 hover:to-amber-800 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center justify-center gap-2"
                     >
+                      <ShoppingCart className="h-4 w-4" />
                       <span className="relative z-10">Add to Cart</span>
                       <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 hover:opacity-100 bg-gradient-to-r from-white/20 to-transparent" />
                     </button>

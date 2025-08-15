@@ -39,9 +39,17 @@ export function MenuPage({ onViewChange }: MenuPageProps) {
 
   const addToCart = (product: Product) => {
     const quantity = getQuantity(product.id);
-    for (let i = 0; i < quantity; i++) {
-      dispatch({ type: 'ADD_TO_CART', payload: product });
-    }
+    dispatch({
+      type: 'ADD_TO_CART',
+      payload: {
+        id: product.id,
+        product: product,
+        quantity: quantity,
+        price: product.price,
+        name: product.name,
+        imageUrl: product.image
+      }
+    });
     // Reset quantity after adding to cart
     setQuantities(prev => ({ ...prev, [product.id]: 1 }));
   };

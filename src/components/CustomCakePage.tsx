@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Upload, CheckCircle, Loader2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { CakeOrder } from '../types';
+import { CakeOrder, CartItem } from '../types';
 import { uploadDesignImage } from '../services/supabase';
 
 interface CustomCakePageProps {
@@ -139,24 +139,31 @@ export function CustomCakePage({ onViewChange }: CustomCakePageProps) {
     dispatch({ type: 'ADD_CAKE_ORDER', payload: newCakeOrder });
     
     // Add to cart as a regular item
-    const cartItem: any = { // Using any to avoid type issues with the cart item
+    const cartItem: CartItem = {
       id: newCakeOrder.id,
-      name: `${newCakeOrder.cakeType} (${newCakeOrder.size})`,
-      description: `${newCakeOrder.flavor} with ${newCakeOrder.frosting} frosting${newCakeOrder.decorations?.length ? ', decorations: ' + newCakeOrder.decorations.join(', ') : ''}${newCakeOrder.customText ? ', custom text: ' + newCakeOrder.customText : ''}`,
-      price: 50000,
-      categoryId: 'custom-cake',
-      category_id: 'custom-cake',
-      imageUrl: newCakeOrder.designImage || '',
-      image: newCakeOrder.designImage || '',
-      inStock: true,
-      inventory: 1,
       quantity: 1,
-      // Add required fields with defaults
-      isFeatured: false,
-      isAvailable: true,
-      slug: `custom-cake-${Date.now()}`,
-      createdAt: now,
-      updatedAt: now
+      price: 50000,
+      name: `${newCakeOrder.cakeType} (${newCakeOrder.size})`,
+      imageUrl: newCakeOrder.designImage || '',
+      product: {
+        id: newCakeOrder.id,
+        name: `${newCakeOrder.cakeType} (${newCakeOrder.size})`,
+        description: `${newCakeOrder.flavor} with ${newCakeOrder.frosting} frosting${newCakeOrder.decorations?.length ? ', decorations: ' + newCakeOrder.decorations.join(', ') : ''}${newCakeOrder.customText ? ', custom text: ' + newCakeOrder.customText : ''}`,
+        price: 50000,
+        category_id: 'custom-cake',
+        image: newCakeOrder.designImage || '',
+        inStock: true,
+        inventory: 1,
+        isFeatured: false,
+        isAvailable: true,
+        slug: `custom-cake-${Date.now()}`,
+        createdAt: now,
+        updatedAt: now,
+        isSeasonalSpecial: false,
+        isSignatureProduct: false,
+        display_settings: null,
+        categoryId: 'custom-cake'
+      }
     };
     
     dispatch({ type: 'ADD_TO_CART', payload: cartItem });
