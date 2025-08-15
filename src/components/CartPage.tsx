@@ -89,31 +89,33 @@ export function CartPage({ onViewChange }: CartPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 md:py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-            <p className="text-gray-600 mt-2">{state.cart.length} {state.cart.length === 1 ? 'item' : 'items'}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Shopping Cart</h1>
+            <p className="text-gray-500 sm:text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
+              {state.cart.length} {state.cart.length === 1 ? 'item' : 'items'}
+            </p>
           </div>
           <button
             onClick={() => onViewChange('menu')}
-            className="text-amber-600 hover:text-amber-700 font-medium inline-flex items-center"
+            className="text-amber-600 hover:text-amber-700 font-medium inline-flex items-center text-sm sm:text-base self-start sm:self-center"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
             Continue Shopping
           </button>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm sm:shadow-md overflow-hidden">
               {state.cart.filter(item => item.product).map((item) => (
-                <div key={item.productId} className="p-6 border-b border-gray-200 last:border-b-0">
-                  <div className="flex items-center space-x-4">
-                    <div className="relative w-24 h-24 flex-shrink-0">
+                <div key={item.productId} className="p-3 sm:p-4 md:p-6 border-b border-gray-100 sm:border-gray-200 last:border-b-0">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
                       {(() => {
                         try {
                           const product = item.product as ProductWithImages;
@@ -228,53 +230,76 @@ export function CartPage({ onViewChange }: CartPageProps) {
                         </span>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">{item.product.name}</h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-2">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{item.product.name}</h3>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeItem(item.id);
+                          }}
+                          className="text-red-500 hover:text-red-700 sm:hidden"
+                          aria-label="Remove item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                       {item.product.description && (
-                        <p className="text-gray-600 text-sm">{item.product.description.substring(0, 60)}...</p>
+                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5 line-clamp-2">
+                          {item.product.description}
+                        </p>
                       )}
                       {item.product.categoryId === 'custom-cake' && (
-                        <span className="inline-block mb-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold">Deposit</span>
+                        <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] sm:text-xs font-semibold">
+                          Deposit
+                        </span>
                       )}
-                      <p className="text-amber-600 font-semibold">{formatUGX(item.product.price)} each</p>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateQuantity(item.id, item.quantity - 1);
-                        }}
-                        className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateQuantity(item.id, item.quantity + 1);
-                        }}
-                        className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold text-gray-900">
-                        {formatUGX(item.product.price * item.quantity)}
+                      <p className="text-amber-600 font-semibold text-sm sm:text-base mt-1">
+                        {formatUGX(item.product.price)} each
                       </p>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeItem(item.id);
-                        }}
-                        className="text-red-600 hover:text-red-800 mt-2"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      
+                      <div className="mt-2 sm:mt-3 flex items-center justify-between sm:justify-start gap-4">
+                        <div className="flex items-center border border-gray-200 rounded-full">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(item.id, item.quantity - 1);
+                            }}
+                            className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-50 rounded-l-full transition-colors"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          </button>
+                          <span className="w-6 sm:w-8 text-center text-sm sm:text-base font-medium">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(item.id, item.quantity + 1);
+                            }}
+                            className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-50 rounded-r-full transition-colors"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          </button>
+                        </div>
+                        
+                        <p className="text-base sm:text-lg font-semibold text-gray-900 ml-auto sm:ml-4">
+                          {formatUGX(item.product.price * item.quantity)}
+                        </p>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeItem(item.id);
+                          }}
+                          className="hidden sm:inline-flex text-gray-400 hover:text-red-600 p-1.5 -mr-2"
+                          aria-label="Remove item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -282,47 +307,56 @@ export function CartPage({ onViewChange }: CartPageProps) {
             </div>
           </div>
 
-          {/* Order Summary */}
+          {/* Order Summary - Sticky on desktop */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h3>
-              
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium">{formatUGX(subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">VAT (18%)</span>
-                  <span className="font-medium">{formatUGX(tax)}</span>
-                </div>
-                <div className="border-t pt-3">
-                  <div className="flex justify-between">
-                    <span className="text-lg font-semibold">Total</span>
-                    <span className="text-lg font-semibold text-amber-600">{formatUGX(total)}</span>
+            <div className="sticky top-4">
+              <div className="bg-white rounded-lg shadow-sm sm:shadow-md p-4 sm:p-5 md:p-6 mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Order Summary</h3>
+                
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                  <div className="flex justify-between text-sm sm:text-base">
+                    <span className="text-gray-500 sm:text-gray-600">Subtotal</span>
+                    <span className="font-medium">{formatUGX(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm sm:text-base">
+                    <span className="text-gray-500 sm:text-gray-600">VAT (18%)</span>
+                    <span className="font-medium">{formatUGX(tax)}</span>
+                  </div>
+                  <div className="border-t border-gray-100 pt-3 mt-2">
+                    <div className="flex justify-between text-base sm:text-lg">
+                      <span className="font-semibold">Total</span>
+                      <span className="font-semibold text-amber-600">{formatUGX(total)}</span>
+                    </div>
                   </div>
                 </div>
+
+                <button
+                  onClick={proceedToCheckout}
+                  className="w-full bg-amber-600 text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-amber-700 transition-colors flex items-center justify-center text-sm sm:text-base"
+                >
+                  <CreditCard className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  Proceed to Checkout
+                </button>
+
+                <div className="mt-3 sm:mt-4 text-center text-xs sm:text-sm text-gray-500">
+                  <p>Secure checkout with SSL encryption</p>
+                </div>
               </div>
 
-              <button
-                onClick={proceedToCheckout}
-                className="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition-colors flex items-center justify-center"
-              >
-                <CreditCard className="mr-2 h-5 w-5" />
-                Proceed to Checkout
-              </button>
-
-              <div className="mt-4 text-center text-sm text-gray-600">
-                <p>Secure checkout with SSL encryption</p>
+              {/* Pickup Information */}
+              <div className="bg-amber-50 rounded-lg p-3 sm:p-4 border border-amber-100">
+                <h4 className="font-semibold text-amber-800 text-sm sm:text-base mb-1.5 sm:mb-2">
+                  <span className="inline-flex items-center">
+                    <svg className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Pickup Information
+                  </span>
+                </h4>
+                <p className="text-amber-700 text-xs sm:text-sm">
+                  Orders typically ready within 2-4 hours. We'll notify you when your order is ready for pickup.
+                </p>
               </div>
-            </div>
-
-            {/* Pickup Information */}
-            <div className="bg-amber-50 rounded-lg p-4 mt-6">
-              <h4 className="font-semibold text-amber-800 mb-2">Pickup Information</h4>
-              <p className="text-amber-700 text-sm">
-                Orders typically ready within 2-4 hours. We'll notify you when your order is ready for pickup.
-              </p>
             </div>
           </div>
         </div>

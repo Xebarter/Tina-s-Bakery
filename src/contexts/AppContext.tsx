@@ -83,9 +83,21 @@ type AppAction =
   | { type: 'ADD_CAKE_ORDER'; payload: CakeOrder }
   | { type: 'UPDATE_INVENTORY'; payload: { productId: string; quantity: number } };
 
+// Load cart from localStorage if available
+const loadCartFromStorage = (): CartItem[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const savedCart = localStorage.getItem('cart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  } catch (error) {
+    console.error('Error loading cart from localStorage:', error);
+    return [];
+  }
+};
+
 const initialState: AppState = {
   products: [],
-  cart: [],
+  cart: loadCartFromStorage(),
   currentUser: null,
   customers: [],
   orders: [],
@@ -310,6 +322,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('cart', JSON.stringify(state.cart));
+      } catch (error) {
+        console.error('Error saving cart to localStorage:', error);
+      }
+    }
+  }, [state.cart]);
 
   // Set up auth state listener
   useEffect(() => {
