@@ -11,7 +11,6 @@ export interface Product {
   featured?: boolean;
   isSeasonalSpecial?: boolean;
   isSignatureProduct?: boolean;
-  slug?: string;
   sold?: number;
   display_settings?: {
     badges?: string[];
@@ -76,19 +75,4 @@ export interface SalesReport {
   orderCount: number;
   topProducts: { productId: string; quantity: number; revenue: number; }[];
   customerCount: number;
-}
-
-export interface AboutSection {
-  id: string;
-  title: string;
-  content: string;
-  images: string[];
-  order: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AboutContent {
-  sections: AboutSection[];
 }

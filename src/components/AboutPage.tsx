@@ -1,41 +1,27 @@
-import { useApp } from '../contexts/AppContext';
-import { useEffect } from 'react';
-
 export function AboutPage() {
-  const { state, reloadAboutContent, reloadTeamMembers } = useApp();
-  
-  // Load about content and team members when component mounts
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        await Promise.all([
-          reloadAboutContent(),
-          reloadTeamMembers()
-        ]);
-      } catch (error) {
-        console.error('Error loading about page data:', error);
+  // Static content for the about page
+  const content = {
+    title: "Our Story",
+    description: "Welcome to Tina's Bakery, where passion meets perfection in every bite. For over a decade, we've been crafting artisanal baked goods using only the finest ingredients and traditional techniques.",
+    image: "/images/bakery-interior.jpg",
+    team: [
+      {
+        name: "Tina Mbabazi",
+        role: "Head Baker & Owner",
+        image: "/images/tina.jpg"
+      },
+      {
+        name: "James Kato",
+        role: "Pastry Chef",
+        image: "/images/james.jpg"
+      },
+      {
+        name: "Sarah Nalwoga",
+        role: "Cake Decorator",
+        image: "/images/sarah.jpg"
       }
-    };
-    
-    loadData();
-  }, [reloadAboutContent, reloadTeamMembers]);
-
-  // Use content from state or show loading state
-  const content = state.aboutContent || {
-    id: 'default',
-    title: 'Our Story',
-    content: 'Welcome to our bakery. We are passionate about creating delicious baked goods with the finest ingredients.',
-    images: ['/placeholder-about.jpg']
+    ]
   };
-
-  // Use team members from state or show empty array while loading
-  const team = state.teamMembers.length > 0 
-    ? state.teamMembers.map(member => ({
-        name: member.name,
-        role: member.role,
-        image: member.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`
-      }))
-    : [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -44,19 +30,18 @@ export function AboutPage() {
         <div className="grid md:grid-cols-2 gap-16 items-center mb-24">
           <div className="order-2 md:order-1">
             <h1 className="text-4xl font-extrabold text-gray-900 mb-4">{content.title}</h1>
-            <p className="text-lg text-gray-600 mb-6 whitespace-pre-line">
-              {content.content}
+            <p className="text-lg text-gray-600 mb-6">
+              {content.description}
+            </p>
+            <p className="text-lg text-gray-600 mb-6">
+              Our journey began with a simple dream: to bring the authentic taste of homemade baked goods to our community. Every recipe is crafted with love, using locally-sourced ingredients whenever possible.
             </p>
           </div>
           <div className="order-1 md:order-2">
             <img
-              src={content.images?.[0] || '/placeholder-about.jpg'}
-              alt={content.title || "Tina's Bakery"}
+              src={content.image}
+              alt="Tina's Bakery interior"
               className="rounded-lg shadow-xl w-full h-auto object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder-about.jpg';
-              }}
             />
           </div>
         </div>
@@ -69,32 +54,19 @@ export function AboutPage() {
           </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {team.length > 0 ? (
-            team.map((member, index) => (
-              <div key={`${member.name}-${index}`} className="text-center">
+          {content.team.map((member, index) => (
+            <div key={`${member.name}-${index}`} className="text-center">
+              <div className="w-48 h-48 mx-auto rounded-full bg-gray-200 mb-4 overflow-hidden">
                 <img
                   src={member.image}
                   alt={member.name}
-                  className="w-48 h-48 mx-auto rounded-full shadow-lg mb-4 object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`;
-                  }}
+                  className="w-full h-full object-cover"
                 />
-                <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
-                <p className="text-md text-amber-600 font-semibold">{member.role}</p>
               </div>
-            ))
-          ) : (
-            // Show skeleton loaders while loading
-            [1, 2, 3].map((i) => (
-              <div key={`skeleton-${i}`} className="text-center">
-                <div className="w-48 h-48 mx-auto rounded-full bg-gray-200 animate-pulse mb-4"></div>
-                <div className="h-6 w-32 bg-gray-200 rounded mx-auto mb-2"></div>
-                <div className="h-5 w-24 bg-gray-100 rounded mx-auto"></div>
-              </div>
-            ))
-          )}
+              <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
+              <p className="text-md text-amber-600 font-semibold">{member.role}</p>
+            </div>
+          ))}
         </div>
 
         {/* Contact Us Section */}

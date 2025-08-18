@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import type { 
-  Product, 
-  Order, 
-  Customer, 
-  TeamMember 
+import type {
+  Product,
+  Order,
+  Customer,
+  TeamMember
 } from '../types';
 
 // Environment configuration
@@ -45,16 +45,61 @@ export async function addProduct(product: Product): Promise<Product> {
   return data;
 }
 
-export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
+export async function updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Product> {
+  // Create a type-safe updates object for the database
+  type ProductUpdate = {
+    name?: string;
+    description?: string;
+    price?: number;
+    category?: string;
+    category_id?: string;
+    image_url?: string;
+    in_stock?: boolean;
+    inventory?: number;
+    is_seasonal?: boolean;
+    is_signature?: boolean;
+    display_settings?: any;
+  };
+
+  // Type assertion to access the properties we know exist on the Product type
+  const productUpdates = updates as unknown as Partial<{
+    image: string;
+    inStock: boolean;
+    isSeasonalSpecial: boolean;
+    isSignatureProduct: boolean;
+  }>;
+
+  // Map frontend fields to database fields
+  const { slug, ...restUpdates } = updates as any;
+  const dbUpdates: ProductUpdate = {
+    ...restUpdates,
+    image_url: productUpdates.image,
+    in_stock: productUpdates.inStock,
+    // Removed is_seasonal and is_signature as they do not exist in schema
+  };
+
+  // Remove fields that shouldn't be sent to the database
+  delete (dbUpdates as any).image;
+  delete (dbUpdates as any).inStock;
+  delete (dbUpdates as any).isSeasonalSpecial;
+  delete (dbUpdates as any).isSignatureProduct;
+
   const { data, error } = await supabase
     .from('products')
-    .update(updates)
+    .update(dbUpdates)
     .eq('id', id)
     .select()
     .single();
 
   if (error) throw new Error(error.message);
-  return data;
+
+  // Map database fields back to frontend model
+  return {
+    ...data,
+    image: data.image_url,
+    inStock: data.in_stock,
+    // Removed isSeasonalSpecial and isSignatureProduct mapping
+  };
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
@@ -191,157 +236,19 @@ export async function deleteCustomer(id: string): Promise<boolean> {
   return true;
 }
 
-// ───── ABOUT CONTENT ───────────────────────────────────────
+// ───── TEAM MEMBERS ───────────────────────────────────────
 
-// Default about content to use when not logged in or if there's an error
-const defaultAboutContent = {
-  id: 'default',
-  title: 'Our Story',
-  content: 'Welcome to our bakery. We are passionate about creating delicious baked goods with the finest ingredients.',
-  images: ['https://images.pexels.com/photos/1775043/pexels-photo-1775043.jpeg'],
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
-};
-
-export async function fetchAboutContent(): Promise<any> {
-  console.log('Fetching about content...');
-  try {
-    // First, try to fetch existing content
-    const { data, error } = await supabase
-      .from('about_content')
-      .select('*')
-      .limit(1);
-
-    console.log('About content fetch result:', { data, error });
-
-    // If we have data, return it
-    if (data && data.length > 0) {
-      console.log('Returning existing about content:', data[0]);
-      return data[0];
-    }
-
-    console.log('No existing about content found, checking for session...');
-    
-    // If no content exists and we're authenticated, try to create a default entry
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    const session = sessionData?.session;
-    console.log('Session check:', { session, sessionError });
-    
-    if (session) {
-      console.log('Creating default about content...');
-      const { data: newData, error: insertError } = await supabase
-        .from('about_content')
-        .insert([{
-          id: 'default',
-          title: defaultAboutContent.title,
-          content: defaultAboutContent.content,
-          images: defaultAboutContent.images,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-
-      console.log('Create default content result:', { newData, insertError });
-
-      if (insertError) {
-        console.error('Error creating default content:', insertError);
-      } else if (newData) {
-        return newData;
-      }
-    }
-    
-    console.log('Returning default about content');
-    return defaultAboutContent;
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error in fetchAboutContent:', errorMessage);
-    return defaultAboutContent;
-  }
-}
-
-export interface AboutContentUpdate {
-  title: string;
-  content: string;
-  images: string[];
-  updated_at?: string;
-}
-
-export async function updateAboutContent(id: string, updates: Omit<AboutContentUpdate, 'updated_at'>): Promise<AboutContentUpdate> {
-  try {
-    // Get the current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      console.error('Authentication required:', sessionError?.message || 'No active session');
-      throw new Error('You must be logged in to update the about content');
-    }
-
-    // Prepare the update data
-    const updateData: AboutContentUpdate = {
-      ...updates,
-      updated_at: new Date().toISOString(),
-    };
-
-    // Check if content exists
-    const { data: existingContent, error: fetchError } = await supabase
-      .from('about_content')
-      .select('id')
-      .eq('id', id)
-      .maybeSingle();
-
-    let result;
-    
-    if (existingContent) {
-      // Update existing content
-      const { data, error: updateError } = await supabase
-        .from('about_content')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (updateError) throw updateError;
-      result = data;
-    } else {
-      // Insert new content
-      const { data, error: insertError } = await supabase
-        .from('about_content')
-        .insert([{ id, ...updateData, created_at: new Date().toISOString() }])
-        .select()
-        .single();
-      
-      if (insertError) throw insertError;
-      result = data;
-    }
-    
-    if (!result) {
-      throw new Error('Failed to save about content: No data returned');
-    }
-    
-    return result;
-  } catch (error) {
-    console.error('Error in updateAboutContent:', error);
-    throw new Error(
-      error instanceof Error 
-        ? error.message 
-        : 'An unexpected error occurred while updating the about content'
-    );
-  }
-}
-
-// Team Members
 export async function fetchTeamMembers(): Promise<any[]> {
   const { data, error } = await supabase
     .from('team_members')
     .select('*')
     .order('display_order', { ascending: true });
-    
+
   if (error) {
     console.error('Error fetching team members:', error);
     return [];
   }
-  
+
   return data || [];
 }
 
@@ -351,7 +258,7 @@ export async function addTeamMember(member: Omit<TeamMember, 'id'>): Promise<Tea
     .insert([member])
     .select()
     .single();
-    
+
   if (error) throw error;
   return data;
 }
@@ -363,7 +270,7 @@ export async function updateTeamMember(id: string, updates: Partial<TeamMember>)
     .eq('id', id)
     .select()
     .single();
-    
+
   if (error) throw error;
   return data;
 }
@@ -373,7 +280,7 @@ export async function deleteTeamMember(id: string): Promise<void> {
     .from('team_members')
     .delete()
     .eq('id', id);
-    
+
   if (error) throw error;
 }
 
@@ -388,20 +295,20 @@ export async function fetchCategories(): Promise<{ id: string; name: string; des
   return data || [];
 }
 
-export async function addCategory(category: { name: string; slug: string; description?: string }): Promise<any> {
+export async function addCategory(category: { name: string; description?: string }): Promise<any> {
   const { data, error } = await supabase
     .from('categories')
-    .insert([category])
+    .insert([{ name: category.name, description: category.description }])
     .select()
     .single();
   if (error) throw new Error(error.message);
   return data;
 }
 
-export async function updateCategory(id: string, updates: { name?: string; slug?: string; description?: string }): Promise<any> {
+export async function updateCategory(id: string, updates: { name?: string; description?: string }): Promise<any> {
   const { data, error } = await supabase
     .from('categories')
-    .update(updates)
+    .update({ name: updates.name, description: updates.description })
     .eq('id', id)
     .select()
     .single();
@@ -455,10 +362,10 @@ export async function getDesignImageUrl(path: string): Promise<string> {
     .storage
     .from('designs')
     .getPublicUrl(path);
-  
+
   if (!publicUrl) {
     throw new Error('Failed to get design image URL');
   }
-  
+
   return publicUrl;
 }

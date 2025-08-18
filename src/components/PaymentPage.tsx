@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { CreditCard, Lock, ArrowLeft, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { pesapalService, PaymentRequest } from '../services/pesapal';
@@ -11,10 +11,10 @@ interface PaymentPageProps {
 }
 
 export function PaymentPage({ onViewChange }: PaymentPageProps) {
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [customerInfo, setCustomerInfo] = useState({
     firstName: '',
     lastName: '',
@@ -25,7 +25,11 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
     postalCode: ''
   });
 
-  const subtotal = state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = state.cart.reduce((sum, item) => {
+    const product = 'product' in item ? item.product : item;
+    const price = 'price' in product ? product.price : 0;
+    return sum + (price * item.quantity);
+  }, 0);
   const tax = subtotal * 0.18; // 18% VAT in Uganda
   const total = subtotal + tax;
 
@@ -317,9 +321,9 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Methods</h3>
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="flex items-center">
-                  <img 
-                    src="https://www.pesapal.com/sites/default/files/pesapal-logo.png" 
-                    alt="PesaPal" 
+                  <img
+                    src="https://www.pesapal.com/sites/default/files/pesapal-logo.png"
+                    alt="PesaPal"
                     className="h-8 mr-3"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -339,24 +343,41 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
           {/* Order Summary */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h3>
-            
-            <div className="space-y-4 mb-6">
-              {state.cart.map((item) => (
-                <div key={item.id} className="flex items-center space-x-3">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-12 h-12 object-cover rounded-md"
-                  />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{item.name}</h4>
-                    <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+
+            <div className="space-y-6 mb-6">
+              {state.cart.map((item, index) => {
+                // Handle both nested product structure and direct product properties
+                const product = 'product' in item ? item.product : item;
+                const imageUrl = ('image' in product && product.image) ? String(product.image) : 
+                               ('imageUrl' in product && product.imageUrl) ? String(product.imageUrl) : 
+                               '/images/placeholder-product.jpg';
+                const productName = 'name' in product ? product.name as string : 'Product';
+                const productPrice = 'price' in product ? Number(product.price) : 0;
+                const itemId = ('id' in item && item.id) ? String(item.id) : `item-${index}`;
+                
+                return (
+                  <div key={itemId} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-start space-x-4">
+                      <div className="relative group flex-shrink-0">
+                        <img
+                          src={imageUrl}
+                          alt={productName}
+                          className="w-24 h-24 md:w-28 md:h-28 object-cover rounded-lg border-2 border-gray-200 group-hover:border-amber-400 transition duration-200 shadow-sm bg-white"
+                          onError={e => { e.currentTarget.src = '/images/placeholder-product.jpg'; }}
+                        />
+                        <span className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 bg-amber-500/10 transition duration-200"></span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-lg text-gray-900 mb-1">{productName}</h4>
+                        <p className="text-sm text-gray-600 mb-2">Qty: {item.quantity}</p>
+                        <p className="font-medium text-amber-600">
+                          {formatUGX(productPrice * item.quantity)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="font-medium text-gray-900">
-                    {formatUGX(item.price * item.quantity)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="border-t pt-4 space-y-2">

@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useReducer, ReactNode, useCallback, useState, useEffect, useMemo } from 'react';
 import { supabase } from '../services/supabase';
-import { 
-  Product, 
-  CartItem, 
-  Customer, 
-  Order, 
-  CakeOrder, 
-  Category, 
-  AboutContent,
+import {
+  Product,
+  CartItem,
+  Customer,
+  Order,
+  CakeOrder,
+  Category,
   TeamMember
 } from '../types';
 import {
@@ -27,8 +26,6 @@ import {
   addCategory,
   updateCategory,
   deleteCategory,
-  fetchAboutContent,
-  updateAboutContent,
   fetchTeamMembers,
   addTeamMember as addTeamMemberService,
   updateTeamMember as updateTeamMemberService,
@@ -44,20 +41,11 @@ interface AppState {
   cakeOrders: CakeOrder[];
   isAdminMode: boolean;
   categories: Category[];
-  aboutContent: AboutContent | null;
   teamMembers: TeamMember[];
   authLoading: boolean;
   authError: string | null;
 }
 
-type CartItem = {
-  id: string;
-  product: Product;
-  quantity: number;
-  price: number;
-  name: string;
-  imageUrl?: string;
-};
 
 type AppAction =
   | { type: 'ADD_TO_CART'; payload: CartItem }
@@ -73,7 +61,6 @@ type AppAction =
   | { type: 'SET_ORDERS'; payload: Order[] }
   | { type: 'SET_CUSTOMERS'; payload: Customer[] }
   | { type: 'SET_CATEGORIES'; payload: Category[] }
-  | { type: 'SET_ABOUT_CONTENT'; payload: AboutContent }
   | { type: 'SET_TEAM_MEMBERS'; payload: TeamMember[] }
   | { type: 'ADD_TEAM_MEMBER'; payload: TeamMember }
   | { type: 'UPDATE_TEAM_MEMBER'; payload: TeamMember }
@@ -92,77 +79,81 @@ const initialState: AppState = {
   cakeOrders: [],
   isAdminMode: false,
   categories: [],
-  aboutContent: null,
   teamMembers: [],
   authLoading: false,
   authError: null,
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
+  let nextState: AppState;
   switch (action.type) {
-    case 'ADD_TO_CART':
+    case 'ADD_TO_CART': {
       // Validate the payload
       if (!action.payload.product) {
         console.error('ADD_TO_CART dispatched with missing product:', action.payload);
-        return state; // Do not add invalid items to the cart
+        nextState = state;
+        break;
       }
-
       // Check if product is already in cart
-      const existingItem = state.cart.find(item => item.id === action.payload.id);
-      
+      const existingItem = state.cart.find(item => item.productId === action.payload.productId);
       if (existingItem) {
-        return {
+        nextState = {
           ...state,
           cart: state.cart.map(item =>
-            item.id === action.payload.id
-              ? { 
-                  ...item, 
-                  quantity: item.quantity + action.payload.quantity,
-                  product: { ...item.product } // Ensure product reference is updated
-                }
+            item.productId === action.payload.productId
+              ? {
+                ...item,
+                quantity: item.quantity + action.payload.quantity,
+                product: { ...item.product }
+              }
               : item
           ),
         };
+        break;
       }
-      
-      // Add new item to cart
-      return {
+      nextState = {
         ...state,
         cart: [
-          ...state.cart, 
-          { 
-            id: action.payload.id, 
-            product: action.payload.product, 
-            quantity: action.payload.quantity, 
-            price: action.payload.price, 
-            name: action.payload.name, 
-            imageUrl: action.payload.imageUrl
+          ...state.cart,
+          {
+            productId: action.payload.productId,
+            product: action.payload.product,
+            quantity: action.payload.quantity,
+            specialInstructions: action.payload.specialInstructions
           }
         ],
       };
+      break;
+    }
 
-    case 'REMOVE_FROM_CART':
-      return {
+    case 'REMOVE_FROM_CART': {
+      nextState = {
         ...state,
-        cart: state.cart.filter(item => item.id !== action.payload),
+        cart: state.cart.filter(item => item.productId !== action.payload),
       };
+      break;
+    }
 
-    case 'UPDATE_CART_QUANTITY':
-      return {
+    case 'UPDATE_CART_QUANTITY': {
+      nextState = {
         ...state,
         cart: state.cart.map(item =>
-          item.id === action.payload.id
-            ? { 
-                ...item, 
-                quantity: action.payload.quantity,
-                product: { ...item.product } // Ensure product reference is updated
-              }
+          item.productId === action.payload.id
+            ? {
+              ...item,
+              quantity: action.payload.quantity,
+              product: { ...item.product }
+            }
             : item
         ),
       };
+      break;
+    }
 
-    case 'CLEAR_CART':
-      return { ...state, cart: [] };
+    case 'CLEAR_CART': {
+      nextState = { ...state, cart: [] };
+      break;
+    }
 
     case 'SET_USER':
       return { ...state, currentUser: action.payload };
@@ -174,18 +165,18 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         products: state.products.map(product =>
-          product.id === action.payload.id 
+          product.id === action.payload.id
             ? { ...product, ...action.payload, updatedAt: new Date().toISOString() }
             : product
         )
       };
-      
+
     case 'ADD_PRODUCT':
       return {
         ...state,
         products: [...state.products, action.payload]
       };
-      
+
     case 'REMOVE_PRODUCT':
       return {
         ...state,
@@ -231,9 +222,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_CATEGORIES':
       return { ...state, categories: action.payload };
 
-    case 'SET_ABOUT_CONTENT':
-      return { ...state, aboutContent: action.payload };
-
     case 'SET_TEAM_MEMBERS':
       return { ...state, teamMembers: action.payload };
 
@@ -255,8 +243,16 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
 
     default:
-      return state;
+      nextState = state;
+      break;
   }
+  // Persist cart to localStorage on every change
+  try {
+    localStorage.setItem('cart', JSON.stringify(nextState.cart));
+  } catch (e) {
+    // Ignore storage errors
+  }
+  return nextState;
 }
 
 interface AppContextType {
@@ -291,9 +287,6 @@ interface AppContextType {
   createCategory: (category: { name: string; description?: string }) => Promise<void>;
   editCategory: (id: string, updates: { name?: string; description?: string }) => Promise<void>;
   removeCategory: (id: string) => Promise<void>;
-  // About content
-  reloadAboutContent: () => Promise<void>;
-  updateAboutContent: (id: string, updates: Partial<AboutContent>) => Promise<{ success: boolean; error?: string }>;
   // Team members
   reloadTeamMembers: () => Promise<void>;
   addTeamMember: (member: Omit<TeamMember, 'id'>) => Promise<TeamMember>;
@@ -307,7 +300,18 @@ export type { AppContextType };
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  // Load cart from localStorage on initialization
+  function getInitialState(): AppState {
+    let cart: CartItem[] = [];
+    try {
+      const stored = localStorage.getItem('cart');
+      if (stored) cart = JSON.parse(stored);
+    } catch (e) {
+      cart = [];
+    }
+    return { ...initialState, cart };
+  }
+  const [state, dispatch] = useReducer(appReducer, getInitialState());
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -322,7 +326,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             .select('*')
             .eq('id', session.user.id)
             .single();
-          
+
           if (profile) {
             dispatch({ type: 'SET_USER', payload: profile });
           }
@@ -336,24 +340,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       subscription?.unsubscribe();
     };
   }, []);
-  
+
   // Clear auth error
   const clearAuthError = useCallback(() => {
     setAuthError(null);
   }, []);
-  
+
   // Handle logout
   const handleLogout = useCallback(async (): Promise<void> => {
     try {
       setAuthLoading(true);
       setAuthError(null);
-      
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
+
       // Clear any stored tokens
       localStorage.removeItem('authToken');
-      
+
       // Reset app state
       dispatch({ type: 'SET_USER', payload: null });
       dispatch({ type: 'CLEAR_CART' });
@@ -376,19 +380,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         // Load categories
         const categories = await fetchCategories();
-        // Ensure each category has a slug and matches the Category type
-        const categoriesWithSlugs = categories.map((cat) => ({
-          ...cat,
-          slug: (cat as any).slug || cat.name.toLowerCase().replace(/\s+/g, '-'),
-          description: (cat as any).description || '',
-        })) as Category[];
-        dispatch({ type: 'SET_CATEGORIES', payload: categoriesWithSlugs });
-
-        // Load about content
-        const aboutContent = await fetchAboutContent();
-        if (aboutContent) {
-          dispatch({ type: 'SET_ABOUT_CONTENT', payload: aboutContent });
-        }
+        dispatch({ type: 'SET_CATEGORIES', payload: categories });
 
         // Load team members
         const teamMembers = await fetchTeamMembers();
@@ -417,14 +409,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       // Create a complete product with required fields
       const newProductData = {
-        ...productData,
-        slug: productData.name
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
+        ...productData
+        // createdAt and updatedAt removed
       };
-      
+
       const newProduct = await addProduct(newProductData);
       dispatch({ type: 'ADD_PRODUCT', payload: newProduct });
       return newProduct;
@@ -436,7 +424,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const editProduct = useCallback(async (id: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Product> => {
     try {
-      const updatedProduct = await updateProduct(id, updates);
+      // Remove createdAt and updatedAt from updates
+      const { createdAt, updatedAt, ...restUpdates } = updates as any;
+      const updatedProduct = await updateProduct(id, restUpdates);
       dispatch({ type: 'UPDATE_PRODUCT', payload: updatedProduct });
       return updatedProduct;
     } catch (error) {
@@ -481,26 +471,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const reloadCategories = useCallback(async (): Promise<void> => {
     try {
       const categories = await fetchCategories();
-      const categoriesWithSlugs: Category[] = categories.map(category => {
-        const slug = 'slug' in category && category.slug 
-          ? category.slug 
-          : category.name
-              .toLowerCase()
-              .replace(/[^\w\s-]/g, '')
-              .replace(/\s+/g, '-')
-              .replace(/-+/g, '-');
-              
-        return {
-          ...category,
-          slug,
-          id: category.id,
-          name: category.name,
-          description: 'description' in category ? String(category.description) : '',
-          createdAt: 'createdAt' in category ? String(category.createdAt) : new Date().toISOString(),
-          updatedAt: 'updatedAt' in category ? String(category.updatedAt) : new Date().toISOString(),
-        };
-      });
-      dispatch({ type: 'SET_CATEGORIES', payload: categoriesWithSlugs });
+      dispatch({ type: 'SET_CATEGORIES', payload: categories });
     } catch (error) {
       console.error('Failed to load categories:', error);
       throw error;
@@ -532,9 +503,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         setAuthLoading(true);
         setAuthError(null);
-        
+
         const formattedPhone = phone.startsWith('+') ? phone : `+256${phone.replace(/^0/, '')}`;
-        
+
         const { data, error } = await supabase.auth.signInWithPassword({
           phone: formattedPhone,
           password,
@@ -542,16 +513,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (error) throw error;
         if (!data.session) throw new Error('No session returned');
-        
+
         // Fetch user profile
         const { data: profile, error: profileError } = await supabase
           .from('users')
           .select('*')
           .eq('id', data.session.user.id)
           .single();
-          
+
         if (profileError) throw profileError;
-        
+
         dispatch({ type: 'SET_USER', payload: profile });
       } catch (error: any) {
         console.error('Login error:', error);
@@ -565,10 +536,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         setAuthLoading(true);
         setAuthError(null);
-        
+
         // Format phone number if needed
         const formattedPhone = phone.startsWith('+') ? phone : `+256${phone.replace(/^0/, '')}`;
-        
+
         // Check if phone already exists
         const { data: existingUser, error: lookupError } = await supabase
           .from('users')
@@ -606,7 +577,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
 
         if (profileError) throw profileError;
-        
+
         return;
       } catch (error: any) {
         console.error('Registration error:', error);
@@ -620,16 +591,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         setAuthLoading(true);
         setAuthError(null);
-        
+
         const formattedPhone = phone.startsWith('+') ? phone : `+256${phone.replace(/^0/, '')}`;
-        
+
         const { error } = await supabase.auth.signInWithOtp({
           phone: formattedPhone,
           options: {
             shouldCreateUser: false,
           },
         });
-        
+
         if (error) throw error;
       } catch (error: any) {
         console.error('Error sending OTP:', error);
@@ -643,9 +614,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         setAuthLoading(true);
         setAuthError(null);
-        
+
         const formattedPhone = phone.startsWith('+') ? phone : `+256${phone.replace(/^0/, '')}`;
-        
+
         const { data, error } = await supabase.auth.verifyOtp({
           phone: formattedPhone,
           token,
@@ -669,9 +640,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (profileError) throw profileError;
-        
+
         dispatch({ type: 'SET_USER', payload: profile });
-        
+
         return;
       } catch (error: any) {
         console.error('OTP verification error:', error);
@@ -755,26 +726,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     reloadCategories: async (): Promise<void> => {
       try {
         const categories = await fetchCategories();
-        // Ensure each category has a slug
-        const categoriesWithSlugs: Category[] = categories.map(category => {
-          const slug = ('slug' in category && typeof category.slug === 'string') 
-            ? category.slug
-            : category.name
-                .toLowerCase()
-                .replace(/[^\w\s-]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-');
-            
-          return {
-            id: category.id,
-            name: category.name,
-            description: 'description' in category ? String(category.description) : undefined,
-            slug,
-            createdAt: 'createdAt' in category ? String(category.createdAt) : new Date().toISOString(),
-            updatedAt: 'updatedAt' in category ? String(category.updatedAt) : new Date().toISOString(),
-          };
-        });
-        dispatch({ type: 'SET_CATEGORIES', payload: categoriesWithSlugs });
+        dispatch({ type: 'SET_CATEGORIES', payload: categories });
       } catch (error) {
         console.error('Failed to load categories:', error);
         throw error;
@@ -782,16 +734,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     createCategory: async (category: { name: string; description?: string; slug?: string }): Promise<void> => {
       try {
-        // Generate a URL-friendly slug from the category name
-        const slug = category.name
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '') // Remove special characters
-          .replace(/\s+/g, '-')      // Replace spaces with hyphens
-          .replace(/-+/g, '-');      // Replace multiple hyphens with a single one
-        
-        await addCategory({ 
-          ...category, 
-          slug 
+        await addCategory({
+          name: category.name,
+          description: category.description
         });
         await reloadCategories();
       } catch (error) {
@@ -799,19 +744,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw error;
       }
     },
-    editCategory: async (id: string, updates: { name?: string; description?: string; slug?: string }): Promise<void> => {
+    editCategory: async (id: string, updates: { name?: string; description?: string }): Promise<void> => {
       try {
-        // If name is being updated, update the slug as well
-        const updateData: { name?: string; description?: string; slug?: string } = { ...updates };
-        if (updates.name) {
-          updateData.slug = updates.name
-            .toLowerCase()
-            .replace(/[^\w\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-');
-        }
-        
-        await updateCategory(id, updateData);
+        await updateCategory(id, {
+          name: updates.name,
+          description: updates.description
+        });
         await reloadCategories();
       } catch (error) {
         console.error('Failed to update category:', error);
@@ -820,50 +758,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     removeCategory: async (id: string): Promise<void> => {
       try {
+        // Check for products referencing this category
+        const products = await fetchProducts();
+        const referencingProducts = products.filter(p => p.categoryId === id);
+        if (referencingProducts.length > 0) {
+          throw new Error('Cannot delete category: There are products assigned to this category. Please remove or reassign those products first.');
+        }
         await deleteCategory(id);
         await reloadCategories();
       } catch (error) {
         console.error('Failed to delete category:', error);
-      }
-    },
-    // About content
-    reloadAboutContent: async (): Promise<void> => {
-      try {
-        const content = await fetchAboutContent();
-        dispatch({ type: 'SET_ABOUT_CONTENT', payload: content });
-      } catch (error) {
-        console.error('Failed to load about content:', error);
-      }
-    },
-    updateAboutContent: async (id: string, updates: Partial<AboutContent>): Promise<{ success: boolean; error?: string }> => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          return { 
-            success: false, 
-            error: 'You must be logged in to update the about content. Please sign in and try again.' 
-          };
-        }
-
-        const updatedContent = await updateAboutContent(id, updates);
-        dispatch({ type: 'SET_ABOUT_CONTENT', payload: updatedContent });
-        return { success: true };
-      } catch (error) {
-        console.error('Failed to update about content:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred while updating the about content.';
-        return { 
-          success: false, 
-          error: errorMessage 
-        };
-      }
-    },
-    // Team members
-    reloadTeamMembers: async (): Promise<void> => {
-      try {
-        const members = await fetchTeamMembers();
-        dispatch({ type: 'SET_TEAM_MEMBERS', payload: members });
-      } catch (error) {
-        console.error('Failed to load team members:', error);
+        throw error;
       }
     },
     addTeamMember: async (member: Omit<TeamMember, 'id'>): Promise<TeamMember> => {
@@ -906,10 +811,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 export function useApp(): AppContextType {
   const context = useContext(AppContext);
-  
+
   if (context === undefined) {
     throw new Error('useApp must be used within an AppProvider');
   }
-  
+
   return context;
 }
