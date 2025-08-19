@@ -25,25 +25,37 @@ export interface CartItem extends Product {
 
 export interface Customer {
   id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
+  full_name: string;
   phone: string;
-  loyaltyPoints: number;
-  orders: Order[];
-  joinDate: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  account_type?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  user_id?: string;
 }
 
 export interface Order {
   id: string;
-  customerId: string;
-  items: CartItem[];
+  customer_id: string;
+  items: OrderItem[];
   total: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
-  orderDate: string;
-  pickupDate?: string;
-  notes?: string;
-  paymentMethod: string;
+  status: string;
+  order_date: string;
+  payment_method: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface OrderItem {
+  product_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
 }
 
 export interface CakeOrder {

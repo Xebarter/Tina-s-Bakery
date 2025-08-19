@@ -54,7 +54,7 @@ class CustomerAuthService {
   private normalizePhoneNumber(phone: string): string {
     // Remove all non-digit characters
     const digits = phone.replace(/\D/g, '');
-    
+
     // Add country code if missing (assuming Uganda +256)
     if (digits.length === 9 && digits.startsWith('7')) {
       return `+256${digits}`;
@@ -65,7 +65,7 @@ class CustomerAuthService {
     } else if (digits.length === 13 && digits.startsWith('256')) {
       return `+${digits}`;
     }
-    
+
     return phone.startsWith('+') ? phone : `+${digits}`;
   }
 
@@ -77,19 +77,19 @@ class CustomerAuthService {
 
   private validatePassword(password: string): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     if (password.length < 8) {
       errors.push('Password must be at least 8 characters long');
     }
-    
+
     if (!/\d/.test(password)) {
       errors.push('Password must contain at least one number');
     }
-    
+
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       errors.push('Password must contain at least one special character');
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors
@@ -141,7 +141,7 @@ class CustomerAuthService {
       if (!sessionData) return;
 
       const { token, customerId, expiresAt } = JSON.parse(sessionData);
-      
+
       if (new Date() > new Date(expiresAt)) {
         this.clearSession();
         return;
@@ -210,7 +210,7 @@ class CustomerAuthService {
   async register(data: CustomerRegistrationData): Promise<Customer> {
     try {
       const normalizedPhone = this.normalizePhoneNumber(data.phone);
-      
+
       if (!this.validatePhoneNumber(normalizedPhone)) {
         throw new Error('Please enter a valid phone number (e.g., 0700123456)');
       }
@@ -264,7 +264,7 @@ class CustomerAuthService {
   async login(data: CustomerLoginData): Promise<Customer> {
     try {
       const normalizedPhone = this.normalizePhoneNumber(data.phone);
-      
+
       if (!this.validatePhoneNumber(normalizedPhone)) {
         throw new Error('Please enter a valid phone number');
       }
@@ -300,7 +300,7 @@ class CustomerAuthService {
   async createBillingCustomer(data: BillingCustomerData): Promise<Customer> {
     try {
       const normalizedPhone = this.normalizePhoneNumber(data.phone);
-      
+
       if (!this.validatePhoneNumber(normalizedPhone)) {
         throw new Error('Please enter a valid phone number');
       }
@@ -460,20 +460,27 @@ class CustomerAuthService {
     totalRevenue: number;
   }> {
     try {
+      // First, get the total number of customers
+      const { count: totalCustomers, error: countError } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) throw countError;
+
+      // Get customer stats
       const { data: stats, error } = await supabase
         .from('customers')
         .select('account_type, is_active, total_spent');
 
       if (error) throw error;
 
-      const totalCustomers = stats.length;
       const registeredCustomers = stats.filter(c => c.account_type === 'registered').length;
       const billingOnlyCustomers = stats.filter(c => c.account_type === 'billing_only').length;
       const activeCustomers = stats.filter(c => c.is_active).length;
-      const totalRevenue = stats.reduce((sum, c) => sum + parseFloat(c.total_spent || '0'), 0);
+      const totalRevenue = stats.reduce((sum, c) => sum + parseFloat((c.total_spent || 0).toString()), 0);
 
       return {
-        totalCustomers,
+        totalCustomers: totalCustomers || 0,
         registeredCustomers,
         billingOnlyCustomers,
         activeCustomers,

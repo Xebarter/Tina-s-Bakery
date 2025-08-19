@@ -19,7 +19,7 @@ interface CartPageProps {
 
 export function CartPage({ onViewChange }: CartPageProps) {
   const { state, dispatch } = useApp();
-  
+
   // Debug log to inspect cart items
   useEffect(() => {
     console.log('Cart items:', state.cart);
@@ -28,7 +28,7 @@ export function CartPage({ onViewChange }: CartPageProps) {
       console.log('First cart item product:', state.cart[0]?.product);
       console.log('All product properties:', Object.keys(state.cart[0]?.product || {}));
       console.log('First cart item image URL:', state.cart[0]?.product?.imageUrl);
-      
+
       // Log the first product's full structure
       const firstProduct = state.cart[0]?.product;
       if (firstProduct) {
@@ -36,7 +36,7 @@ export function CartPage({ onViewChange }: CartPageProps) {
       }
     }
   }, [state.cart]);
-  
+
   const subtotal = state.cart.reduce((sum, item) => {
     if (!item.product) {
       console.error('Cart item with missing product:', item);
@@ -110,117 +110,98 @@ export function CartPage({ onViewChange }: CartPageProps) {
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              {state.cart.filter(item => item.product).map((item) => (
-                <div key={item.productId} className="p-6 border-b border-gray-200 last:border-b-0">
+              {state.cart.filter(item => item.product).map((item, idx) => (
+                <div key={item.product?.id ? `${item.product.id}-${idx}` : idx} className="p-6 border-b border-gray-200 last:border-b-0">
                   <div className="flex items-center space-x-4">
                     <div className="relative w-24 h-24 flex-shrink-0">
                       {(() => {
-                        try {
-                          const product = item.product as ProductWithImages;
-                          if (!product) {
-                            console.log('Product is missing for item:', item);
-                            throw new Error('Product not found');
-                          }
-                          
-                          // For custom cakes, prioritize design inspiration image
-                          if (product.categoryId === 'custom-cake' || (product as any).category_id === 'custom-cake') {
-                            // Check for designImage in the product or in the cart item
-                            const designImage = (product as any).designImage || (product as any).image;
-                            if (designImage) {
-                              console.log('Loading design inspiration image:', designImage);
-                              return (
-                                <div className="relative w-full h-full">
-                                  <img
-                                    src={designImage}
-                                    alt="Custom cake design inspiration"
-                                    className="w-full h-full object-cover rounded-md"
-                                    onError={(e) => {
-                                      console.error('Failed to load design inspiration image:', designImage, e);
-                                      const target = e.target as HTMLImageElement;
-                                      target.onerror = null;
-                                      target.src = '/placeholder-cake.jpg';
-                                    }}
-                                    onLoad={() => console.log('Successfully loaded design inspiration image')}
-                                  />
-                                  <span className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                                    Your Design
-                                  </span>
-                                </div>
-                              );
-                            } else {
-                              console.log('No design inspiration image found for custom cake:', product);
-                            }
-                          }
-
-                          // For regular products, try different possible image URL properties
-                          const possibleImageSources = [
-                            (product as any).imageUrl,
-                            (product as any).image_url,
-                            (product as any).image,
-                            (product as any).url,
-                            ...((product as any).images || [])
-                          ].filter(Boolean);
-                          
-                          // Get the first valid image URL
-                          const imageUrl = possibleImageSources[0];
-                          
-                          if (!imageUrl) {
-                            console.log('No image URL found in product. Available properties:', 
-                              Object.entries(product).map(([key, value]) => ({
-                                key,
-                                type: typeof value,
-                                isArray: Array.isArray(value),
-                                value: typeof value === 'object' ? JSON.stringify(value) : value
-                              }))
-                            );
-                            throw new Error('No image URL found');
-                          }
-                          
-                          // If we have a full URL, use it directly
-                          if (imageUrl.startsWith('http')) {
-                            return (
-                              <img
-                                src={imageUrl}
-                                alt={product.name || 'Product image'}
-                                className="w-full h-full object-cover rounded-md"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.onerror = null;
-                                  target.src = '/placeholder-product.jpg';
-                                }}
-                              />
-                            );
-                          }
-                          
-                          // Try to construct URL from Supabase
-                          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                          if (!supabaseUrl) {
-                            console.error('Supabase URL is not configured');
-                            throw new Error('Configuration error');
-                          }
-                          
-                          const fullImageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${imageUrl}`;
-                          return (
-                            <img
-                              src={fullImageUrl}
-                              alt={product.name || 'Product image'}
-                              className="w-full h-full object-cover rounded-md"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.onerror = null;
-                                target.src = '/placeholder-product.jpg';
-                              }}
-                            />
-                          );
-                          
-                        } catch (error) {
-                          console.error('Error rendering product image:', error);
+                        const product = item.product as ProductWithImages;
+                        if (!product) {
+                          console.log('Product is missing for item:', item);
                           return (
                             <div className="w-full h-full bg-gray-100 rounded-md flex items-center justify-center">
                               <span className="text-gray-400 text-xs">No image</span>
                             </div>
                           );
                         }
+
+                        // For custom cakes, prioritize design inspiration image
+                        if (product.categoryId === 'custom-cake' || (product as any).category_id === 'custom-cake') {
+                          // Check for designImage in the product or in the cart item
+                          const designImage = (product as any).designImage || (product as any).image;
+                          if (designImage) {
+                            console.log('Loading design inspiration image:', designImage);
+                            return (
+                              <div className="relative w-full h-full">
+                                <img
+                                  src={designImage}
+                                  alt="Custom cake design inspiration"
+                                  className="w-full h-full object-cover rounded-md"
+                                  onError={(e) => {
+                                    console.error('Failed to load design inspiration image:', designImage, e);
+                                    const target = e.target as HTMLImageElement;
+                                    target.onerror = null;
+                                    target.src = '/placeholder-cake.jpg';
+                                  }}
+                                  onLoad={() => console.log('Successfully loaded design inspiration image')}
+                                />
+                                <span className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                  const designImage = (product as any).designImage || (product as any).image || (product as any).image_url;
+                                </span>
+                              </div>
+                            );
+                          } else {
+                            console.log('No design inspiration image found for custom cake:', product);
+                          }
+                        }
+
+                        // For regular products, try different possible image URL properties
+                        const possibleImageSources = [
+                          product.imageUrl,
+                          (product as any).image_url,
+                          product.image,
+                          (product as any).url,
+                          ...((product as any).images || [])
+                        ].filter(Boolean);
+
+                        // Get the first valid image URL
+                        const imageUrl = possibleImageSources[0];
+
+                        if (!imageUrl) {
+                          console.log('No image URL found in product. Available properties:', Object.entries(product));
+                          return (
+                            <div className="w-full h-full bg-gray-100 rounded-md flex items-center justify-center">
+                              <span className="text-gray-400 text-xs">No image</span>
+                            </div>
+                          );
+                        }
+
+                        // Handle both full URLs and relative paths
+                        let finalImageUrl = imageUrl;
+                        
+                        // If it's not a full URL, try to construct one from Supabase
+                        if (typeof imageUrl === 'string' && !imageUrl.startsWith('http')) {
+                          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                          if (supabaseUrl) {
+                            // Remove any leading slashes from the image path
+                            const cleanPath = imageUrl.replace(/^\/+/, '');
+                            finalImageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${cleanPath}`;
+                          }
+                        }
+                        
+                        return (
+                          <img
+                            src={finalImageUrl}
+                            alt={product.name || 'Product image'}
+                            className="w-full h-full object-cover rounded-md"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = '/images/placeholder-product.jpg';
+                            }}
+                            onLoad={() => console.log('Successfully loaded product image')}
+                          />
+                        );
                       })()}
                       {item.quantity > 1 && (
                         <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
@@ -242,7 +223,7 @@ export function CartPage({ onViewChange }: CartPageProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          updateQuantity(item.id, item.quantity - 1);
+                          updateQuantity(item.productId || item.product?.id, item.quantity - 1);
                         }}
                         className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                         aria-label="Decrease quantity"
@@ -253,7 +234,7 @@ export function CartPage({ onViewChange }: CartPageProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          updateQuantity(item.id, item.quantity + 1);
+                          updateQuantity(item.productId || item.product?.id, item.quantity + 1);
                         }}
                         className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                         aria-label="Increase quantity"
@@ -268,7 +249,7 @@ export function CartPage({ onViewChange }: CartPageProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          removeItem(item.id);
+                          removeItem(item.productId || item.product?.id);
                         }}
                         className="text-red-600 hover:text-red-800 mt-2"
                         aria-label="Remove item"
@@ -286,7 +267,7 @@ export function CartPage({ onViewChange }: CartPageProps) {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h3>
-              
+
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>

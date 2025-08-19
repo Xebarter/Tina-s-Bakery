@@ -3,15 +3,24 @@ import { CreditCard, Lock, ArrowLeft, CheckCircle, XCircle, Loader } from 'lucid
 import { useApp } from '../contexts/AppContext';
 import { pesapalService, PaymentRequest } from '../services/pesapal';
 import { customerAuthService } from '../services/customerAuthService';
-import { formatUGX } from '../utils/currency';
-import { addCustomer, addOrder } from '../services/supabase';
+import { addOrder } from '../services/supabase';
+
+// Format currency in UGX
+const formatUGX = (amount: number): string => {
+  return new Intl.NumberFormat('en-UG', {
+    style: 'currency',
+    currency: 'UGX',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 interface PaymentPageProps {
   onViewChange: (view: string) => void;
 }
 
 export function PaymentPage({ onViewChange }: PaymentPageProps) {
-  const { state } = useApp();
+  const { state, reloadCustomers, reloadOrders } = useApp();
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
@@ -91,26 +100,102 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
     setErrorMessage('');
 
     try {
-      // 1. Store customer in Supabase (match schema)
+      // 1. Register customer by phone number (if not exists)
       const now = new Date().toISOString();
-      const customerObj = {
-        // id: let Supabase auto-generate
-        full_name: customerInfo.firstName + ' ' + customerInfo.lastName,
-        phone: customerInfo.phone,
-        email: customerInfo.email || null,
-        address: customerInfo.address || 'N/A',
-        city: customerInfo.city || 'N/A',
-        country: 'Uganda',
-        account_type: 'billing_only',
-        is_active: true,
-        created_at: now,
-        updated_at: now,
-      };
-      const customer = await addCustomer(customerObj);
+      let customer;
+      try {
+        // Try to fetch existing customer by phone
+        const phone = customerInfo.phone.trim();
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/customers?phone=eq.${encodeURIComponent(phone)}`,
+          {
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Accept': 'application/json',
+            },
+          }
+        );
+        
+        if (!res.ok) {
+          console.error('Failed to fetch customer:', await res.text());
+          throw new Error('Failed to check for existing customer');
+        }
+        
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          customer = data[0];
+          console.log('Found existing customer:', customer);
+        } else {
+          // Create new customer
+          // Generate a deterministic UUID from phone number for user_id
+          const generateUserId = (phone: string) => {
+            // Simple hash function to generate a deterministic UUID from phone
+            const hash = phone.split('').reduce((acc, char) => {
+              return ((acc << 5) - acc) + char.charCodeAt(0);
+            }, 0);
+            
+            // Convert to a UUID-like string (version 4 format)
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+              const r = (hash + Math.random() * 16) % 16 | 0;
+              return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+          };
 
-      // 2. Store order in Supabase (match schema)
+          const customerObj = {
+            first_name: customerInfo.firstName,
+            last_name: customerInfo.lastName,
+            full_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
+            phone: customerInfo.phone,
+            email: customerInfo.email || null,
+            address: customerInfo.address || null,
+            city: customerInfo.city || 'Kampala',
+            country: 'Uganda',
+            account_type: 'billing_only',
+            isActive: true,
+            registrationSource: 'order',
+            created_at: now,
+            updated_at: now,
+            user_id: generateUserId(customerInfo.phone),
+            totalOrders: 0,
+            totalSpent: 0
+          };
+          try {
+            console.log('Creating new customer with data:', customerObj);
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/customers`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify(customerObj)
+            });
+
+            if (!response.ok) {
+              const errorData = await response.text();
+              console.error('Failed to create customer:', errorData);
+              throw new Error(`Failed to create customer: ${errorData}`);
+            }
+
+            const newCustomer = await response.json();
+            console.log('Created new customer:', newCustomer);
+            customer = Array.isArray(newCustomer) ? newCustomer[0] : newCustomer;
+          } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+            console.error('Error in customer creation:', errorMessage);
+            throw new Error(`Failed to create customer: ${errorMessage}`);
+          }
+        }
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        console.error('Error in customer registration:', errorMessage);
+        throw new Error(`Failed to register customer: ${errorMessage}`);
+      }
+
+      // 2. Store order in Supabase (no items array)
       const orderObj = {
-        // id: let Supabase auto-generate
         customer_id: customer.id,
         total: subtotal + tax,
         status: 'pending',
@@ -119,9 +204,32 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
         created_at: now,
         updated_at: now,
       };
-      await addOrder(orderObj);
+      const order = await addOrder(orderObj as any);
 
-      // 3. Proceed with payment as before
+      // 3. Store each cart item in order_items table
+      for (const item of state.cart) {
+        const product = 'product' in item ? item.product : item;
+        const orderItemObj = {
+          order_id: order.id,
+          product_id: product.id,
+          quantity: item.quantity,
+          unit_price: product.price,
+          total_price: product.price * item.quantity,
+          created_at: now,
+        };
+        // Direct REST API call for order_items (replace with supabase function if available)
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/order_items`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify([orderItemObj]),
+        });
+      }
+
+      // 4. Proceed with payment as before
       const merchantReference = pesapalService.generateMerchantReference();
       const depositAmount = total;
       const depositCurrency = 'UGX';
@@ -143,10 +251,18 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
           postal_code: customerInfo.postalCode || '256',
         },
       };
-      const response = await pesapalService.submitOrderRequest(paymentData);
+      const res = await fetch('http://localhost:4000/api/pesapal/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData),
+      });
+      const response = await res.json();
       if (response.error) {
         throw new Error(response.error.message);
       }
+      // Reload customers and orders so admin dashboard updates immediately
+      await reloadCustomers();
+      await reloadOrders();
       localStorage.setItem('pendingPayment', JSON.stringify({
         merchantReference,
         orderTrackingId: response.order_tracking_id,
@@ -186,7 +302,7 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
     );
   }
 
-  const depositCurrency = 'UGX';
+  // const depositCurrency = 'UGX';
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -348,13 +464,11 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
               {state.cart.map((item, index) => {
                 // Handle both nested product structure and direct product properties
                 const product = 'product' in item ? item.product : item;
-                const imageUrl = ('image' in product && product.image) ? String(product.image) : 
-                               ('imageUrl' in product && product.imageUrl) ? String(product.imageUrl) : 
-                               '/images/placeholder-product.jpg';
+                const imageUrl = product.imageUrl ? String(product.imageUrl) : ((product as any).image ? String((product as any).image) : '/images/placeholder-product.jpg');
                 const productName = 'name' in product ? product.name as string : 'Product';
                 const productPrice = 'price' in product ? Number(product.price) : 0;
                 const itemId = ('id' in item && item.id) ? String(item.id) : `item-${index}`;
-                
+
                 return (
                   <div key={itemId} className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-start space-x-4">
