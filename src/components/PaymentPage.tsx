@@ -251,7 +251,6 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
           postal_code: customerInfo.postalCode || '256',
         },
       };
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
       // Always use Vercel API URL in production
       const apiUrl = import.meta.env.VITE_API_URL || 'https://tinas-bakery.vercel.app/api';
       const res = await fetch(`${apiUrl}/pesapal/order`, {
