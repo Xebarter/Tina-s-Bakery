@@ -218,7 +218,7 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
           created_at: now,
         };
         // Direct REST API call for order_items (replace with supabase function if available)
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/order_items`, {
+        const orderItemsRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/order_items`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -227,6 +227,11 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
           },
           body: JSON.stringify([orderItemObj]),
         });
+        if (!orderItemsRes.ok) {
+          const errorText = await orderItemsRes.text();
+          setErrorMessage('Failed to save order items. Please check Supabase permissions for order_items. Error: ' + errorText);
+          throw new Error('Supabase order_items insert failed: ' + errorText);
+        }
       }
 
       // 4. Proceed with payment as before
