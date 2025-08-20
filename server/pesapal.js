@@ -1,11 +1,23 @@
 // Pesapal backend proxy for Tina's Bakery
-// Requires: npm install express axios dotenv
+// Requires: npm install express axios dotenv cors
 
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const axios = require('axios');
+const corsOptions = require('./cors-config');
+
 const app = express();
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 const BASE_URL = process.env.VITE_PESAPAL_BASE_URL;
 const CONSUMER_KEY = process.env.VITE_PESAPAL_CONSUMER_KEY;

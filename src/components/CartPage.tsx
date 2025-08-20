@@ -157,9 +157,9 @@ export function CartPage({ onViewChange }: CartPageProps) {
 
                         // For regular products, try different possible image URL properties
                         const possibleImageSources = [
-                          product.imageUrl,
+                          product.image,  // This is where the actual image URL is stored
                           (product as any).image_url,
-                          product.image,
+                          product.imageUrl,
                           (product as any).url,
                           ...((product as any).images || [])
                         ].filter(Boolean);

@@ -251,7 +251,8 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
           postal_code: customerInfo.postalCode || '256',
         },
       };
-      const res = await fetch('http://localhost:4000/api/pesapal/order', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${apiUrl}/api/pesapal/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(paymentData),
