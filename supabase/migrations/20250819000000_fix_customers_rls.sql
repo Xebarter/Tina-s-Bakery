@@ -1,32 +1,51 @@
 -- Fix RLS policies for customers table to allow public read access
 
--- 1. Drop existing policies
-DROP POLICY IF EXISTS "Customers can view own data" ON customers;
-DROP POLICY IF EXISTS "Customers can update own data" ON customers;
-DROP POLICY IF EXISTS "Admin can view all customers" ON customers;
-DROP POLICY IF EXISTS "Admins can manage all customers" ON customers;
+-- 1. Drop existing policies if they exist
+DO $$
+BEGIN
+  -- Drop policies if they exist
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'customers' AND policyname = 'Customers can view own data') THEN
+    DROP POLICY "Customers can view own data" ON customers;
+  END IF;
 
--- 2. Create new policies
--- Allow public read access to customers table
-CREATE POLICY "Public read access to customers"
-  ON customers
-  FOR SELECT
-  TO anon, authenticated
-  USING (true);
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'customers' AND policyname = 'Customers can update own data') THEN
+    DROP POLICY "Customers can update own data" ON customers;
+  END IF;
 
--- Allow authenticated users to update their own data
-CREATE POLICY "Customers can update own data"
-  ON customers
-  FOR UPDATE
-  TO authenticated
-  USING (id = (current_setting('app.current_customer_id', true))::uuid);
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'customers' AND policyname = 'Admin can view all customers') THEN
+    DROP POLICY "Admin can view all customers" ON customers;
+  END IF;
 
--- Allow admins full access
-CREATE POLICY "Admins can manage all customers"
-  ON customers
-  FOR ALL
-  TO authenticated
-  USING (public.is_admin());
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'customers' AND policyname = 'Admins can manage all customers') THEN
+    DROP POLICY "Admins can manage all customers" ON customers;
+  END IF;
+
+  -- Create new policies if they don't exist
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'customers' AND policyname = 'Public read access to customers') THEN
+    CREATE POLICY "Public read access to customers"
+      ON customers
+      FOR SELECT
+      TO anon, authenticated
+      USING (true);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'customers' AND policyname = 'Customers can update own data') THEN
+    CREATE POLICY "Customers can update own data"
+      ON customers
+      FOR UPDATE
+      TO authenticated
+      USING (id = (current_setting('app.current_customer_id', true))::uuid);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'customers' AND policyname = 'Admins can manage all customers') THEN
+    CREATE POLICY "Admins can manage all customers"
+      ON customers
+      FOR ALL
+      TO authenticated
+      USING (public.is_admin());
+  END IF;
+END
+$$;
 
 -- 3. Enable RLS on customers table if not already enabled
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;

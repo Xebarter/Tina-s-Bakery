@@ -3,25 +3,43 @@ const allowedOrigins = [
   'http://localhost:5173',         // Local development
   'https://tinas-bakery.vercel.app', // Production
   'https://tinas-backery.vercel.app', // Common typo
-  '*', // Allow all origins in production
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    // Allow all origins in production
-    if (process.env.NODE_ENV === 'production') return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-      return callback(new Error(msg), false);
+    
+    // In production, only allow requests from the production domain
+    if (process.env.NODE_ENV === 'production') {
+      if (allowedOrigins.some(allowedOrigin => 
+        origin === allowedOrigin || 
+        origin.endsWith('.tinas-bakery.vercel.app')
+      )) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Not allowed by CORS: ${origin}`), false);
     }
-    return callback(null, true);
+    
+    // In development, allow all localhost origins
+    if (process.env.NODE_ENV === 'development') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+    }
+    
+    // For other cases, check against allowedOrigins
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error(`Not allowed by CORS: ${origin}`), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 };
 
 module.exports = corsOptions;

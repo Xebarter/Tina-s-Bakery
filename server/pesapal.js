@@ -23,7 +23,12 @@ const BASE_URL = process.env.VITE_PESAPAL_BASE_URL;
 const CONSUMER_KEY = process.env.VITE_PESAPAL_CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.VITE_PESAPAL_CONSUMER_SECRET;
 const IPN_ID = process.env.VITE_PESAPAL_IPN_ID;
-const CALLBACK_URL = process.env.VITE_PESAPAL_CALLBACK_URL;
+// Use different callback URL based on environment
+const CALLBACK_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://tinas-bakery.vercel.app/payment-callback'
+  : process.env.VITE_PESAPAL_CALLBACK_URL || 'http://localhost:5173/payment-callback';
+
+console.log('Using PesaPal callback URL:', CALLBACK_URL);
 
 // Get Pesapal access token
 async function getAccessToken() {
