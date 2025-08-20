@@ -116,12 +116,12 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
             },
           }
         );
-        
+
         if (!res.ok) {
           console.error('Failed to fetch customer:', await res.text());
           throw new Error('Failed to check for existing customer');
         }
-        
+
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           customer = data[0];
@@ -134,7 +134,7 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
             const hash = phone.split('').reduce((acc, char) => {
               return ((acc << 5) - acc) + char.charCodeAt(0);
             }, 0);
-            
+
             // Convert to a UUID-like string (version 4 format)
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
               const r = (hash + Math.random() * 16) % 16 | 0;
@@ -252,7 +252,9 @@ export function PaymentPage({ onViewChange }: PaymentPageProps) {
         },
       };
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${apiUrl}/api/pesapal/order`, {
+      // Always use Vercel API URL in production
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://tinas-bakery.vercel.app/api';
+      const res = await fetch(`${apiUrl}/pesapal/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(paymentData),
