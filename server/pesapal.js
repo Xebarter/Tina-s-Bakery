@@ -1,72 +1,109 @@
 // Pesapal backend proxy for Tina's Bakery
-// Requires: npm install express axios dotenv cors
+import express from 'express';
+import axios from 'axios';
 
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const corsOptions = require('./cors-config');
+const router = express.Router();
 
-const app = express();
-
-// Middleware
-app.use(cors(corsOptions));
-app.use(express.json());
-
-// Logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
-  next();
-});
-
-const BASE_URL = process.env.VITE_PESAPAL_BASE_URL;
+const BASE_URL = process.env.VITE_PESAPAL_BASE_URL || 'https://cybqa.pesapal.com/pesapalv3';
 const CONSUMER_KEY = process.env.VITE_PESAPAL_CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.VITE_PESAPAL_CONSUMER_SECRET;
 const IPN_ID = process.env.VITE_PESAPAL_IPN_ID;
+
 // Use different callback URL based on environment
 const CALLBACK_URL = process.env.NODE_ENV === 'production' 
   ? 'https://tinas-bakery.vercel.app/payment-callback'
   : process.env.VITE_PESAPAL_CALLBACK_URL || 'http://localhost:5173/payment-callback';
 
-console.log('Using PesaPal callback URL:', CALLBACK_URL);
+console.log('PesaPal Config:', { 
+  baseUrl: BASE_URL,
+  callbackUrl: CALLBACK_URL,
+  ipnId: IPN_ID 
+});
 
 // Get Pesapal access token
 async function getAccessToken() {
-  const url = `${BASE_URL}/api/Auth/RequestToken`;
-  const body = {
-    consumer_key: CONSUMER_KEY,
-    consumer_secret: CONSUMER_SECRET
-  };
-  const { data } = await axios.post(url, body);
-  return data.token;
+  try {
+    const url = `${BASE_URL}/api/Auth/RequestToken`;
+    const body = {
+      consumer_key: CONSUMER_KEY,
+      consumer_secret: CONSUMER_SECRET
+    };
+    
+    console.log('Requesting PesaPal access token...');
+    const response = await axios.post(url, body, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.data.token) {
+      throw new Error('No access token received from PesaPal');
+    }
+    
+    console.log('Successfully obtained PesaPal access token');
+    return response.data.token;
+  } catch (error) {
+    console.error('Error getting PesaPal access token:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw new Error('Failed to authenticate with PesaPal');
+  }
 }
 
 // Submit order request
-app.post('/api/pesapal/order', async (req, res) => {
+router.post('/pesapal/order', async (req, res) => {
   try {
+    console.log('Received PesaPal order request:', JSON.stringify(req.body, null, 2));
+    
     const token = await getAccessToken();
     const url = `${BASE_URL}/api/Transactions/SubmitOrderRequest`;
-    const orderData = req.body;
+    
+    const orderData = {
+      ...req.body,
+      callback_url: CALLBACK_URL,
+      notification_id: IPN_ID,
+      ipn_notification_type: 'POST'
+    };
+
+    console.log('Sending order to PesaPal:', JSON.stringify(orderData, null, 2));
+    
     const response = await axios.post(url, orderData, {
       headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
+      timeout: 30000 // 30 second timeout
     });
+    
+    console.log('PesaPal order response:', JSON.stringify(response.data, null, 2));
     res.json(response.data);
+    
   } catch (error) {
-    console.error('Pesapal order error:', error.response?.data || error.message);
-    res.status(500).json({ error: error.response?.data || error.message });
+    console.error('PesaPal order error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      stack: error.stack
+    });
+    
+    res.status(error.response?.status || 500).json({
+      error: 'Failed to process payment',
+      details: error.response?.data || error.message
+    });
   }
 });
 
-// Health check
-app.get('/api/pesapal/health', (req, res) => {
-  res.json({ status: 'ok' });
+// Health check endpoint
+router.get('/pesapal/health', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    service: 'pesapal',
+    timestamp: new Date().toISOString()
+  });
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Pesapal backend running on port ${PORT}`);
-});
+export default router;

@@ -128,7 +128,7 @@ export function CartPage({ onViewChange }: CartPageProps) {
                         // For custom cakes, prioritize design inspiration image
                         if (product.categoryId === 'custom-cake' || (product as any).category_id === 'custom-cake') {
                           // Check for designImage in the product or in the cart item
-                          const designImage = (product as any).designImage || (product as any).image;
+                          const designImage = (product as any).designImage || product.image || product.image_url;
                           if (designImage) {
                             console.log('Loading design inspiration image:', designImage);
                             return (
@@ -146,12 +146,18 @@ export function CartPage({ onViewChange }: CartPageProps) {
                                   onLoad={() => console.log('Successfully loaded design inspiration image')}
                                 />
                                 <span className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                                  const designImage = (product as any).designImage || (product as any).image || (product as any).image_url;
+                                  Custom Design
                                 </span>
                               </div>
                             );
                           } else {
                             console.log('No design inspiration image found for custom cake:', product);
+                            // Return a placeholder when no image is found
+                            return (
+                              <div className="w-full h-full bg-gray-100 rounded-md flex items-center justify-center">
+                                <span className="text-gray-400 text-xs">Custom Cake</span>
+                              </div>
+                            );
                           }
                         }
 
@@ -175,29 +181,17 @@ export function CartPage({ onViewChange }: CartPageProps) {
                             </div>
                           );
                         }
-
-                        // Handle both full URLs and relative paths
-                        let finalImageUrl = imageUrl;
-                        
-                        // If it's not a full URL, try to construct one from Supabase
-                        if (typeof imageUrl === 'string' && !imageUrl.startsWith('http')) {
-                          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                          if (supabaseUrl) {
-                            // Remove any leading slashes from the image path
-                            const cleanPath = imageUrl.replace(/^\/+/, '');
-                            finalImageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${cleanPath}`;
-                          }
-                        }
                         
                         return (
                           <img
-                            src={finalImageUrl}
-                            alt={product.name || 'Product image'}
+                            src={imageUrl}
+                            alt={product.name}
                             className="w-full h-full object-cover rounded-md"
                             onError={(e) => {
+                              console.error('Failed to load product image:', imageUrl, e);
                               const target = e.target as HTMLImageElement;
                               target.onerror = null;
-                              target.src = '/images/placeholder-product.jpg';
+                              target.src = '/placeholder-cake.jpg';
                             }}
                             onLoad={() => console.log('Successfully loaded product image')}
                           />

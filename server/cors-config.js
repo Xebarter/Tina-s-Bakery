@@ -18,22 +18,11 @@ const corsOptions = {
       )) {
         return callback(null, true);
       }
-      return callback(new Error(`Not allowed by CORS: ${origin}`), false);
+      return callback(new Error('Not allowed by CORS'));
     }
     
-    // In development, allow all localhost origins
-    if (process.env.NODE_ENV === 'development') {
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return callback(null, true);
-      }
-    }
-    
-    // For other cases, check against allowedOrigins
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    return callback(new Error(`Not allowed by CORS: ${origin}`), false);
+    // In development, allow all origins
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -42,4 +31,4 @@ const corsOptions = {
   optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 };
 
-module.exports = corsOptions;
+export default corsOptions;
