@@ -12,12 +12,10 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "build": "vite build",
     "build:server": "esbuild server/index.js --bundle --platform=node --target=node18 --outfile=.vercel/output/functions/server/index.js --packages=external",
-    "setup:vercel": "node scripts/setup-vercel.js",
-    "setup:output": "node setup-vercel-output.js",
     "start": "node server/index.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "vercel-build": "npm run setup:output && npm install && npm run build && npm run build:server",
+    "vercel-build": "node scripts/vercel-build.js",
     "postinstall": "npm run build"
   },
   "engines": {
