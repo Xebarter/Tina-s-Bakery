@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Loader, ArrowRight } from 'lucide-react';
+import { Loader, CheckCircle, XCircle, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { pesapalService } from '../services/pesapal';
 import { paymentLogger } from '../utils/paymentLogger';
+import { pesapalProxyService } from '../services/pesapalProxy';
 
 interface PaymentCallbackPageProps {
   onViewChange: (view: string) => void;
@@ -36,8 +36,8 @@ export function PaymentCallbackPage({ onViewChange }: PaymentCallbackPageProps) 
         const pendingPayment = JSON.parse(pendingPaymentStr);
 
         if (orderTrackingId) {
-          // Check payment status with PesaPal
-          const paymentStatus = await pesapalService.getTransactionStatus(orderTrackingId);
+          // Check payment status with PesaPal through our proxy
+          const paymentStatus = await pesapalProxyService.getTransactionStatus(orderTrackingId);
           
           if (paymentStatus.status === 'COMPLETED' || paymentStatus.payment_status_description === 'Completed') {
             // Payment successful
@@ -131,7 +131,7 @@ export function PaymentCallbackPage({ onViewChange }: PaymentCallbackPageProps) 
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Amount Paid:</span>
-                    <span className="font-medium">Ugx {(orderDetails.amount * 130).toFixed(2)}</span>
+                    <span className="font-medium">{formatUGX(orderDetails.amount)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Payment Reference:</span>
@@ -141,7 +141,7 @@ export function PaymentCallbackPage({ onViewChange }: PaymentCallbackPageProps) 
                     <p className="text-sm text-gray-600 mb-2">Items Ordered:</p>
                     {orderDetails.items.map((item: any, index: number) => (
                       <div key={index} className="text-sm">
-                        {item.quantity}x {item.name}
+                        {item.quantity}x {item.product?.name || item.name}
                       </div>
                     ))}
                   </div>
@@ -218,6 +218,16 @@ export function PaymentCallbackPage({ onViewChange }: PaymentCallbackPageProps) 
       default:
         return null;
     }
+  };
+
+  // Format currency in UGX
+  const formatUGX = (amount: number): string => {
+    return new Intl.NumberFormat('en-UG', {
+      style: 'currency',
+      currency: 'UGX',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   return (

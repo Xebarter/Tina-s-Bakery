@@ -15,6 +15,7 @@ import AdminLogin from './components/AdminLogin';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PaymentPage } from './components/PaymentPage';
 import { PaymentCallbackPage } from './components/PaymentCallbackPage';
+import { PaymentSuccess } from './components/PaymentSuccess';
 import { OrderTracking } from './components/OrderTracking';
 import { ChatSystem } from './components/ChatSystem';
 import { MessageCircle, Phone, Mail, MapPin } from 'lucide-react';
@@ -126,6 +127,7 @@ function AppContent() {
           <Route path="/account" element={<AccountPage onViewChange={handleViewChange} />} />
           <Route path="/payment" element={<PaymentPage onViewChange={handleViewChange} />} />
           <Route path="/payment-callback" element={<PaymentCallbackPage onViewChange={handleViewChange} />} />
+          <Route path="/payment-success" element={<PaymentSuccess onViewChange={handleViewChange} />} />
           <Route path="/order-tracking" element={<OrderTracking currentUser={state.currentUser} />} />
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

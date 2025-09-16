@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import corsOptions from './cors-config.js';
 import pesapalRouter from './pesapal.js';
 
@@ -27,7 +27,12 @@ app.use((req, res, next) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    mockPayments: process.env.MOCK_PAYMENTS || 'not set',
+    nodeEnv: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Mount PesaPal routes
@@ -42,9 +47,32 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  app.use(express.static(join(__dirname, '../../dist')));
+  
+  // Handle SPA routing
+  app.get('*', (req, res) => {
+    res.sendFile(join(__dirname, '../../dist/index.html'));
+  });
+}
+
+// Export the Express API for Vercel
+const createServer = () => app;
+
+// Start the server in development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Mock Payments: ${process.env.MOCK_PAYMENTS || 'not set (using live mode)'}`);
+  });
+}
+
+export { createServer };
+
+export default (req, res) => {
+  return createServer().handle(req, res);
+};

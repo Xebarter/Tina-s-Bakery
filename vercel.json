@@ -4,7 +4,10 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": {
+        "distDir": "dist",
+        "outputDirectory": "dist"
+      }
     },
     {
       "src": "server/index.js",
@@ -14,24 +17,21 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server/index.js"
+      "dest": "/api"
     },
     {
-      "src": "/(.*)",
-      "dest": "/dist/$1"
+      "src": "/pesapal/(.*)",
+      "dest": "/api/pesapal/$1"
     },
     {
-      "src": "/admin",
-      "dest": "/dist/index.html"
+      "handle": "filesystem"
     },
     {
-      "src": "/admin/(.*)",
-      "dest": "/dist/index.html"
+      "src": "^/(.*)",
+      "dest": "/index.html"
     }
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  }
 }

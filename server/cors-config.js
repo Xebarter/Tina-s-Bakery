@@ -3,6 +3,7 @@ const allowedOrigins = [
   'http://localhost:5173',         // Local development
   'https://tinas-bakery.vercel.app', // Production
   'https://tinas-backery.vercel.app', // Common typo
+  // Add any other domains that should be allowed
 ];
 
 const corsOptions = {
@@ -10,18 +11,20 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
-    // In production, only allow requests from the production domain
+    // Check if the origin is in our allowed list
+    if (allowedOrigins.some(allowedOrigin => 
+      origin === allowedOrigin || 
+      origin.startsWith(allowedOrigin)
+    )) {
+      return callback(null, true);
+    }
+    
+    // In production, be strict about CORS
     if (process.env.NODE_ENV === 'production') {
-      if (allowedOrigins.some(allowedOrigin => 
-        origin === allowedOrigin || 
-        origin.endsWith('.tinas-bakery.vercel.app')
-      )) {
-        return callback(null, true);
-      }
       return callback(new Error('Not allowed by CORS'));
     }
     
-    // In development, allow all origins
+    // In development, allow all origins for easier testing
     callback(null, true);
   },
   credentials: true,

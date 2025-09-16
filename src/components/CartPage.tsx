@@ -27,10 +27,13 @@ export function CartPage({ onViewChange }: CartPageProps) {
       console.log('First cart item:', state.cart[0]);
       console.log('First cart item product:', state.cart[0]?.product);
       console.log('All product properties:', Object.keys(state.cart[0]?.product || {}));
-      console.log('First cart item image URL:', state.cart[0]?.product?.imageUrl);
+      const firstProduct = state.cart[0]?.product as any;
+      console.log('Product image property:', firstProduct?.image);
+      console.log('Product image_url property:', firstProduct?.image_url);
+      const imageUrl = firstProduct?.image || firstProduct?.image_url || firstProduct?.imageUrl;
+      console.log('Resolved cart item image URL:', imageUrl);
 
       // Log the first product's full structure
-      const firstProduct = state.cart[0]?.product;
       if (firstProduct) {
         console.log('First product full structure:', JSON.stringify(firstProduct, null, 2));
       }

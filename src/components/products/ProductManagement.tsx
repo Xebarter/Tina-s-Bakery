@@ -106,76 +106,69 @@ const ProductManagement: React.FC = () => {
   if (error) return <div className="text-red-500">{error}</div>;
 
   return (
-    <div className="p-6 bg-white rounded-2xl border border-gray-200 shadow-xl max-w-7xl mx-auto">
+    <div className="p-6 bg-white rounded-2xl border border-gray-200">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Manage Products</h2>
-        <button onClick={handleNewProduct} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg shadow hover:from-blue-700 hover:to-blue-600 transition-all duration-150">
-          <Plus className="w-5 h-5" />
-          <span className="font-semibold">New Product</span>
+        <h2 className="text-2xl font-bold text-gray-800">Manage Products</h2>
+        <button onClick={handleNewProduct} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus className="w-5 h-5 mr-2" />
+          New Product
         </button>
       </div>
 
       <div className="overflow-x-auto">
-        <div className="rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="min-w-full text-sm text-left text-gray-700">
-            <thead className="sticky top-0 z-10 bg-gradient-to-r from-gray-50 to-gray-100">
-              <tr>
-                <th scope="col" className="px-6 py-3 font-semibold">Image</th>
-                <th scope="col" className="px-6 py-3 font-semibold">Name</th>
-                <th scope="col" className="px-6 py-3 font-semibold">Price</th>
-                <th scope="col" className="px-6 py-3 font-semibold">Category</th>
-                <th scope="col" className="px-6 py-3 text-right font-semibold">Actions</th>
+        <table className="w-full text-sm text-left text-gray-500">
+          <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3">Image</th>
+              <th scope="col" className="px-6 py-3">Name</th>
+              <th scope="col" className="px-6 py-3">Price</th>
+              <th scope="col" className="px-6 py-3">Category</th>
+              <th scope="col" className="px-6 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((prod) => (
+              <tr key={prod.id} className="bg-white border-b hover:bg-gray-50">
+                <td className="px-6 py-2">
+                  {prod.image || prod.image_url ? (
+                    <img
+                      src={prod.image || prod.image_url}
+                      alt={prod.name}
+                      className="w-12 h-12 object-cover rounded-md"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/placeholder-product.jpg';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">
+                      <span>No Image</span>
+                    </div>
+                  )}
+                </td>
+                <td className="px-6 py-4 font-medium text-gray-900">{prod.name}</td>
+                <td className="px-6 py-4">{formatUGX(prod.price)}</td>
+                <td className="px-6 py-4">{prod.categoryId}</td>
+                <td className="px-6 py-4 text-right">
+                  <button className="p-2 text-blue-600 hover:text-blue-800" onClick={() => handleEditProduct(prod)}>
+                    <Edit size={18} />
+                  </button>
+                  <button className="p-2 text-red-600 hover:text-red-800" onClick={() => handleDeleteProduct(prod.id)}>
+                    <Trash2 size={18} />
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {products.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-400">No products found.</td>
-                </tr>
-              ) : (
-                products.map((prod) => (
-                  <tr key={prod.id} className="bg-white border-b hover:bg-blue-50 transition-all">
-                    <td className="px-6 py-2">
-                      {(prod.image || prod.image_url) ? (
-                        <img
-                          src={prod.image || prod.image_url}
-                          alt={prod.name}
-                          className="w-12 h-12 object-cover rounded-md border border-gray-200 shadow-sm"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/images/placeholder-product.jpg';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center text-gray-400 border border-gray-200">
-                          <span>No Image</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900">{prod.name}</td>
-                    <td className="px-6 py-4">{formatUGX(prod.price)}</td>
-                    <td className="px-6 py-4 capitalize">{prod.categoryId}</td>
-                    <td className="px-6 py-4 text-right flex gap-2 justify-end">
-                      <button className="p-2 rounded hover:bg-blue-100 text-blue-600 transition-all" title="Edit" onClick={() => handleEditProduct(prod)}>
-                        <Edit size={18} />
-                      </button>
-                      <button className="p-2 rounded hover:bg-red-100 text-red-600 transition-all" title="Delete" onClick={() => handleDeleteProduct(prod.id)}>
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Modal for ProductForm */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-xl border border-gray-200 animate-fadeIn">
-            <h3 className="text-xl font-bold mb-6 text-gray-900">{editingProduct ? 'Edit Product' : 'New Product'}</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl">
+            <h3 className="text-lg font-semibold mb-4">{editingProduct ? 'Edit Product' : 'New Product'}</h3>
+            {/* ProductForm expects product, categories, onSubmit, onCancel, isEditing */}
             <ProductForm
               product={editingProduct ?? undefined}
               categories={categories}

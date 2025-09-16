@@ -1,5 +1,46 @@
+// PesaPal integration service for Tina's Bakery
 import CryptoJS from 'crypto-js';
+import { v4 as uuidv4 } from 'uuid';
 import { paymentLogger } from '../utils/paymentLogger';
+
+// Types
+export interface BillingAddress {
+  email_address: string;
+  phone_number: string;
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  line_1: string;
+  city: string;
+  postal_code: string;
+  country_code: string;
+}
+
+export interface PaymentRequest {
+  id: string;
+  currency: string;
+  amount: number;
+  description: string;
+  callback_url: string;
+  notification_id: string;
+  billing_address: BillingAddress;
+}
+
+export interface PaymentResponse {
+  order_tracking_id: string;
+  merchant_reference: string;
+  redirect_url: string;
+  error: string | null;
+  status: string;
+}
+
+export interface PaymentStatus {
+  status: string;
+  payment_method: string;
+  message: string;
+  order_notification_type: string;
+  transaction_date: string;
+}
 
 // PesaPal configuration
 const PESAPAL_CONFIG = {
@@ -9,57 +50,6 @@ const PESAPAL_CONFIG = {
   callbackUrl: import.meta.env.VITE_PESAPAL_CALLBACK_URL || 'http://localhost:5173/payment-callback',
   baseUrl: import.meta.env.VITE_PESAPAL_BASE_URL || 'https://cybqa.pesapal.com/pesapalv3', // Sandbox URL
 };
-
-export interface PaymentRequest {
-  id: string;
-  currency: string;
-  amount: number;
-  description: string;
-  callback_url: string;
-  notification_id: string;
-  billing_address: {
-    email_address: string;
-    phone_number: string;
-    country_code: string;
-    first_name: string;
-    middle_name?: string;
-    last_name: string;
-    line_1?: string;
-    line_2?: string;
-    city?: string;
-    state?: string;
-    postal_code?: string;
-    zip_code?: string;
-  };
-}
-
-export interface PaymentResponse {
-  order_tracking_id: string;
-  merchant_reference: string;
-  redirect_url: string;
-  error?: {
-    type: string;
-    code: string;
-    message: string;
-    call_id: string;
-  };
-}
-
-export interface PaymentStatus {
-  payment_method: string;
-  amount: number;
-  created_date: string;
-  confirmation_code: string;
-  payment_status_description: string;
-  description: string;
-  message: string;
-  payment_account: string;
-  call_id: string;
-  status_code: number;
-  merchant_reference: string;
-  account_number: string;
-  status: string;
-}
 
 class PesaPalService {
   private accessToken: string | null = null;
