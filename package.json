@@ -15,7 +15,7 @@
     "start": "node server/index.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "vercel-build": "node scripts/vercel-build.js",
+    "vercel-build": "node vercel-build.mjs",
     "postinstall": "npm run build"
   },
   "engines": {
