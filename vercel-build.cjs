@@ -1,7 +1,7 @@
-// This script is used by Vercel to build the application
-import { execSync } from 'child_process';
+// This script is used by Vercel to build the application (CommonJS version)
+const { execSync } = require('child_process');
 
-console.log('Starting Vercel build process...');
+console.log('Starting Vercel build process (CommonJS)...');
 
 // Install dependencies
 console.log('Installing dependencies...');
@@ -13,7 +13,7 @@ try {
   execSync('npm run build', { stdio: 'inherit' });
   console.log('Frontend build completed successfully!');
 } catch (error) {
-  console.error('Error during build:', error);
+  console.error('Error during frontend build:', error);
   process.exit(1);
 }
 
